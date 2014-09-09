@@ -1,0 +1,43 @@
+---
+name: garden
+
+templates:
+  garden_ctl.erb: bin/garden_ctl
+
+packages:
+  - warden-linux
+  - iptables
+  - shadow
+
+properties:
+  garden.listen_network:
+    description: "Warden server connection mode (tcp or unix)."
+    default: unix
+
+  garden.listen_address:
+    description: "Warden server listening address."
+    default: /var/vcap/data/garden/garden.sock
+
+  garden.disk_quota_enabled:
+    description: "Enforce disk quotas. Disable for nested Garden."
+    default: true
+
+  garden.deny_networks:
+    description: "List of CIDR blocks to which containers will be denied access."
+    default: []
+
+  garden.allow_networks:
+    description: "List of CIDR blocks to which containers will be allowed access (applied after deny)."
+    default: []
+
+  garden.debug_listen_address:
+    description: "tcp address on which to serve debug info"
+    default: "0.0.0.0:17013"
+
+  garden.default_container_grace_time:
+    description: "duration after which to reap idle containers"
+    default: 5m
+
+  garden.default_container_rootfs:
+    description: "path to the rootfs to use when a container specifies no rootfs"
+    default: ""
