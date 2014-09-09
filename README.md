@@ -8,6 +8,9 @@ To get started with [Vagrant BOSH](https://github.com/cppforlife/vagrant-bosh):
 ```sh
 cd garden-release/
 
+# Obtain submodules
+git submodule update --init --recursive
+
 # install the Vagrant BOSH provisioner
 vagrant plugin install vagrant-bosh
 
@@ -31,6 +34,9 @@ release](https://www.pivotaltracker.com/story/show/78508966).
 cd garden-release/
 
 vagrant ssh
+
+# escalate to root
+sudo su -
 
 # check logs:
 tail -f /var/vcap/sys/log/**/*.log
@@ -73,4 +79,16 @@ ps auxf
 # hop in the container:
 cd /var/vcap/data/garden/depot/${handle}
 ./bin/wsh
+```
+
+## Update the release
+
+Once the VM is up, modify it by issuing:
+```
+vagrant provision
+```
+
+## Destroy the release
+```
+vagrant destroy
 ```
