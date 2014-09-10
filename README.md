@@ -132,4 +132,21 @@ Upload the downloaded stemcell to the BOSH lite instance:
 bosh upload stemcell <stemcell_file_name>
 ```
 
-Then ...
+Then deploy Garden Linux to BOSH lite:
+```
+bosh deployment manifests/bosh-lite.yml
+bosh deploy
+```
+
+Check the state of the deployment:
+```
+bosh vms
+bosh ssh <job/index>
+```
+
+Then operate on Garden Linux from inside the VM:
+```
+sudo su -
+curl http://127.0.0.1:7777/containers
+```
+and so on as per the Vagrant BOSH insructions above.
