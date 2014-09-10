@@ -88,6 +88,12 @@ Once the VM is up, modify it by issuing:
 vagrant provision
 ```
 
+## Create another blob
+See the bosh documentation for [adding blobs](http://docs.cloudfoundry.org/bosh/create-release.html#blobs) including setting up `config/private.yml` with appropriate S3 keys, and then issue:
+```
+bosh upload blobs
+```
+
 ## Destroy the release
 ```
 vagrant destroy
