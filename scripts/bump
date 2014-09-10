@@ -3,7 +3,7 @@
 
 set -e -x
 
-pushd warden-linux/
+pushd garden-linux/
   # capture sha of input to bump to
   export WARDEN_LINUX_SHA=$(git rev-parse HEAD)
 popd
@@ -17,7 +17,7 @@ git merge --no-edit master
 
 git submodule update --remote
 
-pushd src/warden-linux/
+pushd src/garden-linux/
   git checkout $WARDEN_LINUX_SHA
 popd
 
