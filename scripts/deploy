@@ -2,3 +2,4 @@
 # vim: set ft=sh
 
 echo no-op deploy
+exit 1
