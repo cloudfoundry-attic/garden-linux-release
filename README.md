@@ -141,10 +141,16 @@ bosh deploy
 Check the state of the deployment:
 ```
 bosh vms
-bosh ssh <job/index>
+bosh ssh <Garden job/index>
+```
+Make a note of the IP address of the Garden job.
+
+Then, assuming you ran `bin/add-route` as part of setting up BOSH Lite, operate on Garden Linux from outside the VM:
+```
+url http://<IP address of Garden job>:7777/containers
 ```
 
-Then operate on Garden Linux from inside the VM:
+or from inside the VM:
 ```
 sudo su -
 curl http://127.0.0.1:7777/containers
