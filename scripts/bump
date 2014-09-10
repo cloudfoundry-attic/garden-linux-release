@@ -1,0 +1,26 @@
+#!/bin/bash
+# vim: set ft=sh
+
+set -e -x
+
+pushd warden-linux/
+  # capture sha of input to bump to
+  export WARDEN_LINUX_SHA=$(git rev-parse HEAD)
+popd
+
+cd release-develop/
+
+git config --global user.email "ci@localhost"
+git config --global user.name "CI Bot"
+
+git merge --no-edit master
+
+git submodule update --remote
+
+pushd src/warden-linux/
+  git checkout $WARDEN_LINUX_SHA
+popd
+
+git add src/
+
+git commit -m "auto-bump"
