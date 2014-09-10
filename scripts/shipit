@@ -1,0 +1,25 @@
+#!/bin/bash
+# vim: set ft=sh
+
+set -e -x
+
+VERSION=$(cat ./version/number)
+if [ -z "$VERSION" ]; then
+  echo "missing version number"
+  exit 1
+fi
+
+# TODO replace with appropriate path
+cp deployments/private.yml release-develop/config/private.yml
+
+cd release-develop/
+
+git config --global user.email "ci@localhost"
+git config --global user.name "CI Bot"
+
+git merge --no-edit master
+
+bosh -n create release --final --with-tarball --version "$VERSION"
+
+git add -A
+git commit -m "release v${VERSION}"
