@@ -14,3 +14,8 @@ shadow/shadow-4.2.1.tar.gz:
   sha: !binary |-
     MWQyMDU0MTg4NjNkZDAyYjJiOGFmMGZhNzhmY2NlNWQ3Yzg0OGQxZg==
   size: 3686676
+busybox/busybox.tar.gz:
+  object_id: cc631520-0a72-4cb1-8c87-700f6bdd3305
+  sha: !binary |-
+    NjQxMDYxN2IyNjY0NGFiM2ZhYzkzNzI0OTRjYWJlMzRlMjY5OTcwYw==
+  size: 1145751
