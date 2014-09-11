@@ -1,9 +1,6 @@
 # Garden Linux Release
 
-A [BOSH](http://docs.cloudfoundry.org/bosh/) release for deploying Garden
-Linux. Garden Linux may be deployed to its own virtual machine using Vagrant BOSH.
-Alternatively, Garden Linux may be deployed to a (currently Garden) container in
-a virtual machine using BOSH lite.
+A [BOSH](http://docs.cloudfoundry.org/bosh/) release for deploying [Garden Linux](https://github.com/cloudfoundry-incubator/garden-linux). Garden Linux may be deployed to its own virtual machine using Vagrant BOSH. Alternatively, Garden Linux may be deployed to a (currently Garden) container in a virtual machine using BOSH lite.
 
 # Vagrant BOSH
 
