@@ -13,7 +13,7 @@ cd release-develop/
 git config --global user.email "ci@localhost"
 git config --global user.name "CI Bot"
 
-git merge --no-edit master
+git merge --no-edit concourse-master
 
 git submodule update --remote
 
