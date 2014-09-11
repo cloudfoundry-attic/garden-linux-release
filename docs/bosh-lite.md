@@ -42,17 +42,7 @@ bosh ssh <Garden job/index>
 ```
 Make a note of the IP address of the Garden job.
 
-Then, assuming you ran `bin/add-route` as part of setting up BOSH Lite, operate on Garden Linux from outside the VM:
-```
-url http://<IP address of Garden job>:7777/containers
-```
-
-or from inside the VM:
-```
-bosh ssh
-sudo su -
-curl http://127.0.0.1:7777/containers
-```
+Then, assuming you ran `bin/add-route` as part of setting up BOSH Lite, proceed to kick the tyres.
 
 ## Kick the tyres
 
