@@ -11,6 +11,8 @@ fi
 
 source ./garden-ci/bosh_environment
 
+cp garden-ci/config/private.yml release-develop/config/private.yml
+
 bosh target ${BOSH_TARGET}
 
 bosh deployment garden-ci/deployments/garden-linux.yml
