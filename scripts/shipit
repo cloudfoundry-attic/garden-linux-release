@@ -9,8 +9,7 @@ if [ -z "$VERSION" ]; then
   exit 1
 fi
 
-# TODO replace with appropriate path
-cp deployments/private.yml release-develop/config/private.yml
+cp garden-ci/config/private.yml release-develop/config/private.yml
 
 cd release-develop/
 
