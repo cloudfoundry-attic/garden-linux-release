@@ -21,11 +21,24 @@ vagrant up
 ```
 
 
-## Development
+## Kick the tyres
 
-See the [usage of directories in a BOSH
-release](https://www.pivotaltracker.com/story/show/78508966).
+Use the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api) against endpoint `http://127.0.0.1:7777` to create a container, then:
+```
+# spawn a process
+#
+# curl will choke here as the protocol is hijacked, but...it probably worked.
+curl -H "Content-Type: application/json" \
+  -XPOST http://127.0.0.1:7777/containers/${handle}/processes \
+  -d '{"path":"sleep","args":["10"]}'
 
+# from inside the vagrant vm, see 'sleep 10' running:
+ps auxf
+
+# hop in the container:
+cd /var/vcap/data/garden/depot/${handle}
+./bin/wsh
+```
 
 ## Debugging
 
@@ -51,24 +64,11 @@ less /var/vcap/jobs/...
 ```
 
 
-## Kick the tyres
+## Development
 
-Use the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api) against endpoint `http://127.0.0.1:7777` to create a container, then:
-```
-# spawn a process
-#
-# curl will choke here as the protocol is hijacked, but...it probably worked.
-curl -H "Content-Type: application/json" \
-  -XPOST http://127.0.0.1:7777/containers/${handle}/processes \
-  -d '{"path":"sleep","args":["10"]}'
+See the [usage of directories in a BOSH release](https://www.pivotaltracker.com/story/show/78508966).
 
-# from inside the vagrant vm, see 'sleep 10' running:
-ps auxf
-
-# hop in the container:
-cd /var/vcap/data/garden/depot/${handle}
-./bin/wsh
-```
+This repository also includes files, in the `ci` and `scripts` directories, to integrate with [Concourse](https://github.com/concourse/concourse).
 
 ## Update the release
 
@@ -87,57 +87,3 @@ bosh upload blobs
 ```
 vagrant destroy
 ```
-
-# BOSH Lite
-
-To get started with [BOSH lite](https://github.com/cloudfoundry/bosh-lite), follow the
-instructions to [Prepare the Environment](https://github.com/cloudfoundry/bosh-lite#install-and-boot-a-virtual-machine)
-and [Install and Boot a Virtual Machine](https://github.com/cloudfoundry/bosh-lite#install-and-boot-a-virtual-machine), then:
-
-```sh
-cd garden-linux-release/
-
-# Obtain submodules
-git submodule update --init --recursive
-
-# create and upload a BOSH release
-# (if there are changes in the git repository, specify --force on create)
-bosh -n create release
-bosh -n upload release
-```
-
-Then follow the instructions for downloading a stemcell in [Manually Deploying Cloud Foundry](https://github.com/cloudfoundry/bosh-lite/blob/master/docs/deploy-cf.md#manual-deploy), choosing a stemcell with `warden-boshlite-ubuntu-trusty` in the name:
-```
-bosh public stemcells
-bosh download public stemcell <stemcell_name>
-```
-
-Upload the downloaded stemcell to the BOSH lite instance:
-```
-bosh upload stemcell <stemcell_file_name>
-```
-
-Then deploy Garden Linux to BOSH lite:
-```
-bosh deployment manifests/bosh-lite.yml
-bosh deploy
-```
-
-Check the state of the deployment:
-```
-bosh vms
-bosh ssh <Garden job/index>
-```
-Make a note of the IP address of the Garden job.
-
-Then, assuming you ran `bin/add-route` as part of setting up BOSH Lite, operate on Garden Linux from outside the VM:
-```
-url http://<IP address of Garden job>:7777/containers
-```
-
-or from inside the VM:
-```
-sudo su -
-curl http://127.0.0.1:7777/containers
-```
-and so on as per the Vagrant BOSH insructions above.
