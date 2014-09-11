@@ -24,7 +24,9 @@ vagrant up
 ## Kick the tyres
 
 Use the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api) against endpoint `http://127.0.0.1:7777` to create a container, then:
-```
+```sh
+cd garden-linux-release/
+
 # spawn a process
 #
 # curl will choke here as the protocol is hijacked, but...it probably worked.
@@ -32,7 +34,10 @@ curl -H "Content-Type: application/json" \
   -XPOST http://127.0.0.1:7777/containers/${handle}/processes \
   -d '{"path":"sleep","args":["10"]}'
 
-# from inside the vagrant vm, see 'sleep 10' running:
+# from inside the vagrant vm...
+vagrant ssh
+
+# ... see 'sleep 10' running:
 ps auxf
 
 # hop in the container:
