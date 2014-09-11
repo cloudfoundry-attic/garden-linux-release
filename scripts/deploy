@@ -1,5 +1,18 @@
 #!/bin/bash
 # vim: set ft=sh
 
-echo no-op deploy
-exit 1
+set -e -x
+
+source ./garden-ci/bosh_environment
+
+bosh target ${BOSH_TARGET}
+
+bosh deployment garden-ci/deployments/garden-linux.yml
+
+bosh -n upload stemcell bosh-stemcells/*.tgz --skip-if-exists
+
+cd release-develop/
+
+bosh -n create release
+bosh -n upload release --skip-if-exists
+bosh -n deploy
