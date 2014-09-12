@@ -1,3 +1,21 @@
 [submodule "src/garden-linux"]
 	path = src/garden-linux
 	url = https://github.com/cloudfoundry-incubator/garden-linux
+[submodule "src/github.com/cloudfoundry-incubator/garden"]
+	path = src/github.com/cloudfoundry-incubator/garden
+	url = https://github.com/cloudfoundry-incubator/garden
+[submodule "src/github.com/onsi/ginkgo"]
+	path = src/github.com/onsi/ginkgo
+	url = https://github.com/onsi/ginkgo
+[submodule "src/github.com/onsi/gomega"]
+	path = src/github.com/onsi/gomega
+	url = https://github.com/onsi/gomega
+[submodule "src/github.com/tedsuo/rata"]
+	path = src/github.com/tedsuo/rata
+	url = https://github.com/tedsuo/rata
+[submodule "src/code.google.com/p/gogoprotobuf"]
+	path = src/code.google.com/p/gogoprotobuf
+	url = https://code.google.com/p/gogoprotobuf
+[submodule "src/github.com/bmizerany/pat"]
+	path = src/github.com/bmizerany/pat
+	url = https://github.com/bmizerany/pat

@@ -1,0 +1,9 @@
+---
+image: docker:///cloudfoundry/golang-ci
+
+params:
+  WARDEN_NETWORK: tcp
+  WARDEN_ADDR: ""
+
+run:
+  path: release-develop/scripts/acceptance
