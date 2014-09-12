@@ -5,7 +5,7 @@ Vagrant BOSH is used to deploy Garden Linux to its own virtual machine, i.e. not
 To get started with [Vagrant BOSH](https://github.com/cppforlife/vagrant-bosh):
 
 ```sh
-cd garden-release/
+cd garden-linux-release/
 
 # Obtain submodules
 git submodule update --init --recursive
