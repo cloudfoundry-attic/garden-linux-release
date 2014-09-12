@@ -35,11 +35,11 @@ case $1 in
 
     mkdir -p /var/vcap/data/garden/depot
 
-    exec /var/vcap/packages/warden-linux/bin/warden-linux \
+    exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
       -overlays=/var/vcap/data/garden/overlays \
       -graph=/var/vcap/data/garden/graph \
-      -bin=/var/vcap/packages/warden-linux/src/github.com/cloudfoundry-incubator/warden-linux/linux_backend/bin \
+      -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin \
       -disableQuotas=<%= !p("garden.disk_quota_enabled") %> \
       -listenNetwork=<%= p("garden.listen_network") %> \
       -listenAddr=<%= p("garden.listen_address") %> \
