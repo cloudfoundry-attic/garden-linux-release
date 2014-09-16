@@ -35,8 +35,15 @@ case $1 in
 
     mkdir -p /var/vcap/data/garden/depot
 
+    <% if p("garden.destroy_containers_on_start") %>
+    snapshots_path=""
+    <% else %>
+    snapshots_path=/var/vcap/data/garden/snapshots
+    <% end %>
+
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
+      -snapshots="${snapshots_path}" \
       -overlays=/var/vcap/data/garden/overlays \
       -graph=/var/vcap/data/garden/graph \
       -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin \
