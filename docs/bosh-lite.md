@@ -1,10 +1,9 @@
 # BOSH Lite
 
 BOSH lite is used to deploy Garden Linux inside a container, which is useful for testing Garden Linux's nested container support.
+![BOSH Lite](images/bosh-lite.png)
 
-To get started with [BOSH lite](https://github.com/cloudfoundry/bosh-lite), follow the
-instructions to [Prepare the Environment](https://github.com/cloudfoundry/bosh-lite#install-and-boot-a-virtual-machine)
-and [Install and Boot a Virtual Machine](https://github.com/cloudfoundry/bosh-lite#install-and-boot-a-virtual-machine), then:
+To get started with [BOSH lite](https://github.com/cloudfoundry/bosh-lite), follow the instructions to [Prepare the Environment](https://github.com/cloudfoundry/bosh-lite#install-and-boot-a-virtual-machine) and [Install and Boot a Virtual Machine](https://github.com/cloudfoundry/bosh-lite#install-and-boot-a-virtual-machine), then:
 
 ```sh
 cd garden-linux-release/
