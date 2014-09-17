@@ -1,6 +1,7 @@
 # Vagrant BOSH
 
-Vagrant BOSH is used to deploy Garden Linux to its own virtual machine, i.e. not inside a container.
+Vagrant BOSH is used to deploy Garden Linux to its own virtual machine, i.e. not inside a container. Garden Linux may then be used to create one or more containers.
+![Vagrant BOSH](images/vagrant-bosh.png)
 
 To get started with [Vagrant BOSH](https://github.com/cppforlife/vagrant-bosh):
 
