@@ -15,7 +15,7 @@ git submodule update --init --recursive
 vagrant plugin install vagrant-bosh
 
 # install BOSH
-gem install bosh_cli
+gem install bosh_cli --no-ri --no-rdoc
 
 # provision
 vagrant up
