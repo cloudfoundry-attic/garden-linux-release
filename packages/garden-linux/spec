@@ -6,5 +6,6 @@ dependencies:
 
 files:
   - garden-linux/**/*.go
-  - garden-linux/linux_backend/**/*
+  - garden-linux/old/Makefile
+  - garden-linux/old/linux_backend/**/*
   - garden-linux/Makefile
