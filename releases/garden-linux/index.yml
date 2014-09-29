@@ -28,4 +28,6 @@ builds:
     version: 0.14.0
   12dc44ea-08ad-4c9b-b366-c15d50299875:
     version: 0.15.0
+  3999157c-0564-4191-8a77-8c4371ebab30:
+    version: 0.16.0
 format-version: '2'
