@@ -70,4 +70,6 @@ builds:
     version: 0.35.0
   00bb2679-6ccd-4c0d-9b41-8f5b90f24498:
     version: 0.36.0
+  ba59d95f-5d67-4e8b-8c06-337bd4e7825d:
+    version: 0.37.0
 format-version: '2'
