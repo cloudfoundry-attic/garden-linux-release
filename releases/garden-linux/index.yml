@@ -80,4 +80,6 @@ builds:
     version: 0.40.0
   1d569c72-5941-44c4-9f75-738926b28440:
     version: 0.41.0
+  4ef70e5c-91ee-42f6-9afe-b7f1a07407b0:
+    version: 0.42.0
 format-version: '2'
