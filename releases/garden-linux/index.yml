@@ -84,4 +84,6 @@ builds:
     version: 0.42.0
   5900ca21-12a2-4d91-a279-562bb435e1d8:
     version: 0.43.0
+  df84ae99-5087-442e-88c1-1683a9844964:
+    version: 0.44.0
 format-version: '2'
