@@ -90,4 +90,6 @@ builds:
     version: 0.45.0
   da812fa4-7e56-4535-a27f-9cae08e72f0c:
     version: 0.46.0
+  d602f2ea-e609-48c6-add8-c18639d973ed:
+    version: 0.47.0
 format-version: '2'
