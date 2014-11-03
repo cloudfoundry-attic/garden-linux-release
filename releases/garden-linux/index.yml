@@ -98,4 +98,6 @@ builds:
     version: 0.49.0
   4d394b6b-05d3-4fc8-881d-116f56b324bc:
     version: 0.50.0
+  572a5a46-10ef-46bf-9bb9-be78aa73c853:
+    version: 0.51.0
 format-version: '2'
