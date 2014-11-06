@@ -19,6 +19,10 @@ properties:
     description: "Garden server listening address."
     default: /var/vcap/data/garden/garden.sock
 
+  garden.network_mtu:
+    description: "Maximum network transmission unit length in bytes."
+    default: 1500
+
   garden.disk_quota_enabled:
     description: "Enforce disk quotas. Disable for nested Garden."
     default: true
