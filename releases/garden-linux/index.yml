@@ -100,4 +100,6 @@ builds:
     version: 0.50.0
   572a5a46-10ef-46bf-9bb9-be78aa73c853:
     version: 0.51.0
+  a1933502-acc7-4791-800a-813632cb8895:
+    version: 0.52.0
 format-version: '2'
