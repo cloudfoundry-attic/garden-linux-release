@@ -43,7 +43,7 @@ ps auxf
 
 # hop in the container:
 cd /var/vcap/data/garden/depot/${handle}
-./bin/wsh
+sudo ./bin/wsh
 ```
 
 ## Debugging
