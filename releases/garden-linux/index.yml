@@ -120,4 +120,6 @@ builds:
     version: 0.60.0
   fea78d91-3cf1-4243-a4c2-9c085a83bc60:
     version: 0.61.0
+  45ebe2e6-e972-48ed-96b2-7ae2df8352f9:
+    version: 0.62.0
 format-version: '2'
