@@ -128,4 +128,6 @@ builds:
     version: 0.64.0
   bcf53190-6cb9-4c40-9fa1-162dedc59ec5:
     version: 0.65.0
+  c4a2b6f1-3e3e-4bfd-9a89-4467d3dacd94:
+    version: 0.66.0
 format-version: '2'
