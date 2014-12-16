@@ -136,4 +136,6 @@ builds:
     version: 0.68.0
   dc393e03-160a-43d5-9517-f04cf0061487:
     version: 0.69.0
+  7cbb5bc9-d01d-40ee-b563-8ca70a9ea435:
+    version: 0.70.0
 format-version: '2'
