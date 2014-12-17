@@ -142,4 +142,6 @@ builds:
     version: 0.71.0
   8f03bed5-c5c2-41cb-a75b-63f32c44f65b:
     version: 0.72.0
+  ac112cbd-1671-4763-a6f0-103071e0dc8a:
+    version: 0.73.0
 format-version: '2'
