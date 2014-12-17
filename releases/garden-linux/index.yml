@@ -144,4 +144,6 @@ builds:
     version: 0.72.0
   ac112cbd-1671-4763-a6f0-103071e0dc8a:
     version: 0.73.0
+  8ccaa292-d370-4500-9842-a29088402452:
+    version: 0.74.0
 format-version: '2'
