@@ -152,4 +152,6 @@ builds:
     version: 0.76.0
   0a8e908c-780b-45d0-b291-74a8b1fb16bb:
     version: 0.77.0
+  3f9ae95d-547f-4608-be95-53477c4a7e8c:
+    version: 0.78.0
 format-version: '2'
