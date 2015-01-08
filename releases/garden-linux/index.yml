@@ -160,4 +160,6 @@ builds:
     version: 0.80.0
   76ebc059-46a2-456f-875b-878ac24491e4:
     version: 0.81.0
+  d2dcca15-79d6-4c7f-94f8-53f27f291fda:
+    version: 0.82.0
 format-version: '2'
