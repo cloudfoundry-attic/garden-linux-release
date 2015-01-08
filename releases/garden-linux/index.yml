@@ -164,4 +164,6 @@ builds:
     version: 0.82.0
   635030ee-852d-4028-a422-484473a3f3c7:
     version: 0.83.0
+  c9930e3c-761d-4577-8032-3167994e6131:
+    version: 0.84.0
 format-version: '2'
