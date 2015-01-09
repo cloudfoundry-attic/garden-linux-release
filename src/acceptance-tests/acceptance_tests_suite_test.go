@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cloudfoundry-incubator/garden/api"
+	"github.com/cloudfoundry-incubator/garden"
 	"github.com/cloudfoundry-incubator/garden/client"
 	"github.com/cloudfoundry-incubator/garden/client/connection"
 
@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var wardenClient api.Client
+var wardenClient garden.Client
 
 var _ = BeforeSuite(func() {
 	wardenNetwork := os.Getenv("WARDEN_NETWORK")

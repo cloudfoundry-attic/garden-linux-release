@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/cloudfoundry-incubator/garden/api"
+	"github.com/cloudfoundry-incubator/garden"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("With a container", func() {
-	var container api.Container
+	var container garden.Container
 
 	BeforeEach(func() {
 		var err error
 
-		container, err = wardenClient.Create(api.ContainerSpec{})
+		container, err = wardenClient.Create(garden.ContainerSpec{})
 		Ω(err).ShouldNot(HaveOccurred())
 	})
 
@@ -30,11 +30,11 @@ var _ = Describe("With a container", func() {
 			stdout := gbytes.NewBuffer()
 			stderr := gbytes.NewBuffer()
 
-			process, err := container.Run(api.ProcessSpec{
+			process, err := container.Run(garden.ProcessSpec{
 				Path: "sh",
 				Args: []string{"-c", "sleep 0.5; echo $FIRST; sleep 0.5; echo $SECOND >&2; sleep 0.5; exit 42"},
 				Env:  []string{"FIRST=hello", "SECOND=goodbye"},
-			}, api.ProcessIO{
+			}, garden.ProcessIO{
 				Stdout: stdout,
 				Stderr: stderr,
 			})
@@ -48,10 +48,10 @@ var _ = Describe("With a container", func() {
 		It("streams input to the process's stdin", func() {
 			stdout := gbytes.NewBuffer()
 
-			process, err := container.Run(api.ProcessSpec{
+			process, err := container.Run(garden.ProcessSpec{
 				Path: "sh",
 				Args: []string{"-c", "cat <&0"},
-			}, api.ProcessIO{
+			}, garden.ProcessIO{
 				Stdin:  bytes.NewBufferString("hello\nworld"),
 				Stdout: stdout,
 			})
@@ -66,15 +66,15 @@ var _ = Describe("With a container", func() {
 				stdout1 := gbytes.NewBuffer()
 				stdout2 := gbytes.NewBuffer()
 
-				process, err := container.Run(api.ProcessSpec{
+				process, err := container.Run(garden.ProcessSpec{
 					Path: "sh",
 					Args: []string{"-c", "sleep 2; echo hello; sleep 0.5; echo goodbye; sleep 0.5; exit 42"},
-				}, api.ProcessIO{
+				}, garden.ProcessIO{
 					Stdout: stdout1,
 				})
 				Ω(err).ShouldNot(HaveOccurred())
 
-				attached, err := container.Attach(process.ID(), api.ProcessIO{
+				attached, err := container.Attach(process.ID(), garden.ProcessIO{
 					Stdout: stdout2,
 				})
 				Ω(err).ShouldNot(HaveOccurred())
@@ -98,7 +98,7 @@ var _ = Describe("With a container", func() {
 			It("terminates all running processes", func() {
 				stdout := gbytes.NewBuffer()
 
-				process, err := container.Run(api.ProcessSpec{
+				process, err := container.Run(garden.ProcessSpec{
 					Path: "sh",
 					Args: []string{
 						"-c",
@@ -112,7 +112,7 @@ var _ = Describe("With a container", func() {
             done
             `,
 					},
-				}, api.ProcessIO{
+				}, garden.ProcessIO{
 					Stdout: stdout,
 				})
 				Ω(err).ShouldNot(HaveOccurred())
