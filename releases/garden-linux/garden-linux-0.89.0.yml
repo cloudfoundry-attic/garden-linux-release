@@ -1,0 +1,54 @@
+---
+packages:
+- name: garden-linux
+  version: !binary |-
+    ZWY3ZjhkZDVlMWY0MjI4ZTJlNjA1NzRhMWQ5MzQ4OGU2ODAyOGMyMQ==
+  sha1: !binary |-
+    ZDA2ZDEwYjNkMTBkN2QzYTkzN2VjNTBjZDA5YWIyNTM1NDg2ZGM1MQ==
+  fingerprint: !binary |-
+    ZWY3ZjhkZDVlMWY0MjI4ZTJlNjA1NzRhMWQ5MzQ4OGU2ODAyOGMyMQ==
+  dependencies:
+  - golang_1.3
+- name: shadow
+  version: !binary |-
+    ZmZkMTc0MWJkOWUwYTE3NmU2N2M2MWVmNzBjZDBlZDc2YjBlYzI4NQ==
+  sha1: !binary |-
+    ZTVlYjM4YmZhOGYzYzgxODA4NmJkNDE2ZmRlYzE0ZjlmYjBiNzEzMQ==
+  fingerprint: !binary |-
+    ZmZkMTc0MWJkOWUwYTE3NmU2N2M2MWVmNzBjZDBlZDc2YjBlYzI4NQ==
+  dependencies: []
+- name: iptables
+  version: !binary |-
+    NzIyNmQzMTFlOTBmNDliMDUyODdlNzlmMzM5NTgxYTFkZTllYTgyZQ==
+  sha1: !binary |-
+    OTgzNDVlNzJmZDk3OTg0YjhjMmExYTQ4NWI5OTg4ZjIwN2RjZTYwZA==
+  fingerprint: !binary |-
+    NzIyNmQzMTFlOTBmNDliMDUyODdlNzlmMzM5NTgxYTFkZTllYTgyZQ==
+  dependencies: []
+- name: golang_1.3
+  version: !binary |-
+    ZTRiNjViY2I0NzhkOWJlYTFmOWM5MjA0MjM0NjUzOTcxMzU1MWE0YQ==
+  sha1: !binary |-
+    ODFlMjBjZmUxYzUxOTkxMDI3NzM0NTg4ODZlNThjMTdlY2QxMzY3NA==
+  fingerprint: !binary |-
+    ZTRiNjViY2I0NzhkOWJlYTFmOWM5MjA0MjM0NjUzOTcxMzU1MWE0YQ==
+  dependencies: []
+- name: busybox
+  version: !binary |-
+    MTU5M2M0MWJlYjU3YzEyZDdmMmI4MmRmZjYxYjQ3ZDRkMTE5OTEzZA==
+  sha1: !binary |-
+    YzQ2YmVhOTU4NWRlY2M1NGU3MDUyZWZjMjdjMTM4ZDdiNjE4ZmZhZQ==
+  fingerprint: !binary |-
+    MTU5M2M0MWJlYjU3YzEyZDdmMmI4MmRmZjYxYjQ3ZDRkMTE5OTEzZA==
+  dependencies: []
+jobs:
+- name: garden
+  version: 83eb432c214d1a6a75a538b1cb0b43411967202d
+  fingerprint: !binary |-
+    ODNlYjQzMmMyMTRkMWE2YTc1YTUzOGIxY2IwYjQzNDExOTY3MjAyZA==
+  sha1: !binary |-
+    MzFlNzhmODExM2IzZDBlMTFkMDZmNTIxYWU4OTIyMDA3NjQyZDU1Zg==
+commit_hash: 8cb5eeb1
+uncommitted_changes: true
+name: garden-linux
+version: 0.89.0
