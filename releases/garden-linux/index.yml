@@ -180,4 +180,6 @@ builds:
     version: 0.90.0
   964af7da-f309-4dca-a33e-c799bcc92fb5:
     version: 0.91.0
+  a60a8d54-9541-44f7-8f05-d4a4b0e89369:
+    version: 0.92.0
 format-version: '2'
