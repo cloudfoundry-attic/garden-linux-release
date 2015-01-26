@@ -186,4 +186,6 @@ builds:
     version: 0.93.0
   94f9fddb-4318-4cb8-b24c-e746722878bb:
     version: 0.94.0
+  2e730f89-be28-4f11-8eb7-3983923abf66:
+    version: 0.95.0
 format-version: '2'
