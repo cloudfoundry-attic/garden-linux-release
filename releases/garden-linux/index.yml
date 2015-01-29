@@ -196,4 +196,6 @@ builds:
     version: 0.98.0
   b5bb725f-41ec-48f5-ae7a-ccca41af05df:
     version: 0.99.0
+  f84594c9-8f87-44ba-8a9b-c0f90b72b81c:
+    version: 0.100.0
 format-version: '2'
