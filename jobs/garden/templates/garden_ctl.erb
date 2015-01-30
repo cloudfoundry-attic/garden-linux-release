@@ -57,6 +57,9 @@ case $1 in
       -debugAddr=<%= p("garden.debug_listen_address") %> \
       -rootfs=<%= p("garden.default_container_rootfs") %> \
       -containerGraceTime=<%= p("garden.default_container_grace_time") %> \
+    <% if_p("garden.docker_registry_endpoint") do |endpoint| %> \
+      -registry=<%= endpoint %> \
+    <% end %> \
       1>>$LOG_DIR/garden.stdout.log \
       2>>$LOG_DIR/garden.stderr.log
 
