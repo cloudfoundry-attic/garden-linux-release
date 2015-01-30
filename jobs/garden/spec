@@ -60,3 +60,9 @@ properties:
   garden.destroy_containers_on_start:
     description: "destroy existing containers when the server starts up"
     default: false
+
+  garden.dropsonde.origin:
+    description: "A string identifier that will be used when reporting metrics to Dropsonde."
+
+  garden.dropsonde.destination:
+    description: "A URL that points at the Metron agent to which metrics are forwarded. By default, it matches with the default of Metron."

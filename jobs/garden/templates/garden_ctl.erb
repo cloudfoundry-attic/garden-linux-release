@@ -60,6 +60,12 @@ case $1 in
     <% if_p("garden.docker_registry_endpoint") do |endpoint| %> \
       -registry=<%= endpoint %> \
     <% end %> \
+    <% if_p("garden.dropsonde.origin") do |origin| %> \
+      -dropsondeOrigin=<%= origin %> \
+    <% end %> \
+    <% if_p("garden.dropsonde.destination") do |destination| %> \
+      -dropsondeDestination=<%= destination %> \
+    <% end %> \
     <% if_p("garden.tag") do |tag| %> \
       -tag=<%= tag %> \
     <% end %> \
