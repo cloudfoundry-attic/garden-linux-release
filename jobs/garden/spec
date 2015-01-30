@@ -42,6 +42,9 @@ properties:
   garden.docker_registry_endpoint:
     description: "An URL pointing to the Docker registry to use to fetch Docker images. If unset, this will default to the Docker default."
 
+  garden.tag:
+    description: "A string that is a server-wide identifier used for 'global' configuration."
+
   garden.debug_listen_address:
     description: "tcp address on which to serve debug info"
     default: "0.0.0.0:17013"

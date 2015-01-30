@@ -60,6 +60,9 @@ case $1 in
     <% if_p("garden.docker_registry_endpoint") do |endpoint| %> \
       -registry=<%= endpoint %> \
     <% end %> \
+    <% if_p("garden.tag") do |tag| %> \
+      -tag=<%= tag %> \
+    <% end %> \
       1>>$LOG_DIR/garden.stdout.log \
       2>>$LOG_DIR/garden.stderr.log
 
