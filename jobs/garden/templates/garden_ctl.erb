@@ -53,6 +53,7 @@ case $1 in
       -listenAddr=<%= p("garden.listen_address") %> \
       -denyNetworks=<%= p("garden.deny_networks").join(",") %> \
       -allowNetworks=<%= p("garden.allow_networks").join(",") %> \
+      -allowHostAccess=<%= p("garden.allow_host_access") %> \
       -debugAddr=<%= p("garden.debug_listen_address") %> \
       -rootfs=<%= p("garden.default_container_rootfs") %> \
       -containerGraceTime=<%= p("garden.default_container_grace_time") %> \

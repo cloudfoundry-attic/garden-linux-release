@@ -35,6 +35,10 @@ properties:
     description: "List of CIDR blocks to which containers will be allowed access (applied after deny)."
     default: []
 
+  garden.allow_host_access:
+    description: "A boolean stating whether or not containers started on this host should be able to reach this host."
+    default: false
+
   garden.debug_listen_address:
     description: "tcp address on which to serve debug info"
     default: "0.0.0.0:17013"
