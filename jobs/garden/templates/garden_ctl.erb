@@ -69,6 +69,12 @@ case $1 in
     <% if_p("garden.tag") do |tag| %> \
       -tag=<%= tag %> \
     <% end %> \
+    <% if_p("garden.port_pool.start") do |start| %> \
+      -portPoolStart=<%= start %> \
+    <% end %> \
+    <% if_p("garden.port_pool.size") do |size| %> \
+      -portPoolSize=<%= size %> \
+    <% end %> \
       1>>$LOG_DIR/garden.stdout.log \
       2>>$LOG_DIR/garden.stderr.log
 
