@@ -32,6 +32,5 @@ jobs:
 
   properties:
     garden:
-      network_mtu: 1499
       listen_network: tcp
       listen_address: 0.0.0.0:7777
