@@ -210,4 +210,6 @@ builds:
     version: 0.105.0
   c22a3549-5945-4840-bf89-c223bfd02cd9:
     version: 0.106.0
+  df4c740e-5734-47b6-a8ad-6fb441d95737:
+    version: 0.107.0
 format-version: '2'
