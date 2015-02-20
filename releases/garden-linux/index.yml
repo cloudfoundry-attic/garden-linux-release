@@ -246,4 +246,6 @@ builds:
     version: 0.123.0
   ba20a776-4b2c-4916-9e20-eb71892fc7fc:
     version: 0.124.0
+  89ecbd93-907f-4f58-8009-9f4230867fcf:
+    version: 0.125.0
 format-version: '2'
