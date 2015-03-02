@@ -260,4 +260,6 @@ builds:
     version: 0.131.0
   8201f2bb-93b7-465d-81c2-655419634975:
     version: 0.132.0
+  95093856-bdc1-4209-b975-2e708a9daa83:
+    version: 0.133.0
 format-version: '2'
