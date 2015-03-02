@@ -254,4 +254,6 @@ builds:
     version: 0.128.0
   fc59b8cf-78b9-438d-91c7-8a3ce457a6d7:
     version: 0.129.0
+  d986d2f2-d643-4488-b727-eeb6e0b503de:
+    version: 0.130.0
 format-version: '2'
