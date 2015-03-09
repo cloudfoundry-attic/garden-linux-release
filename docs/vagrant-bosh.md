@@ -15,7 +15,8 @@ git submodule update --init --recursive
 vagrant plugin install vagrant-bosh
 
 # install BOSH
-gem install bosh_cli --no-ri --no-rdoc
+# currently there is [a problem](https://github.com/cppforlife/vagrant-bosh/issues/4) using a BOSH CLI version > 1.2652.0
+gem install bosh_cli --no-ri --no-rdoc -v 1.2652.0
 
 # provision
 vagrant up
