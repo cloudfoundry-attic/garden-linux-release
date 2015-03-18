@@ -1,0 +1,4 @@
+---
+name: rootfs_lucid64
+files:
+- rootfs_lucid64/lucid64.tgz
