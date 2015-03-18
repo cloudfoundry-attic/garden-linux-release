@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
   end
 
   # provides aufs
-  config.vm.provision "shell", inline: "apt-get -y install linux-image-extra-$(uname -r)"
+  config.vm.provision "shell", inline: "apt-get update && apt-get -y install linux-image-extra-$(uname -r)"
 
   manifest_file = ENV["GARDEN_MANIFEST"] || "manifests/vagrant-bosh.yml"
   config.vm.provision "bosh" do |c|
