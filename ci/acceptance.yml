@@ -1,6 +1,8 @@
 ---
 image: docker:///cloudfoundry/golang-ci
 
+platform: linux
+
 params:
   WARDEN_NETWORK: tcp
   WARDEN_ADDR: ""

@@ -2,5 +2,7 @@
 # may want to replace this with your own image
 image: docker:///concourse/concourse-ci
 
+platform: linux
+
 run:
   path: release-develop/scripts/deploy
