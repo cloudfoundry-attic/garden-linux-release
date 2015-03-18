@@ -19,3 +19,8 @@ busybox/busybox.tar.gz:
   sha: !binary |-
     NjQxMDYxN2IyNjY0NGFiM2ZhYzkzNzI0OTRjYWJlMzRlMjY5OTcwYw==
   size: 1145751
+rootfs_lucid64/lucid64.tgz:
+  object_id: 95e23157-8cd5-44d9-9a22-8a2bc0c49449
+  sha: !binary |-
+    YzM3MjY3YmQ2Zjc5YjJlNWExZmQxNWExODQxNzYwMGM3NmI0Yjg2Mw==
+  size: 199595677
