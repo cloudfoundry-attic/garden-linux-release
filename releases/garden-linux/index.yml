@@ -300,4 +300,6 @@ builds:
     version: 0.152.0
   1d3609fd-ef61-4169-b0fc-3cf09c3862f9:
     version: 0.153.0
+  ae231fe8-e4f7-44a1-b3ed-69f93024ebfa:
+    version: 0.154.0
 format-version: '2'
