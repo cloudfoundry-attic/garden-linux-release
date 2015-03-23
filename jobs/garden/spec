@@ -9,7 +9,6 @@ packages:
   - iptables
   - shadow
   - busybox
-  - rootfs_lucid64
 
 properties:
   garden.listen_network:
