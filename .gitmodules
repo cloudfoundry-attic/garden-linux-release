@@ -22,6 +22,3 @@
 [submodule "src/github.com/gogo/protobuf"]
 	path = src/github.com/gogo/protobuf
 	url = https://github.com/gogo/protobuf
-[submodule "src/github.com/pivotal-golang/lager"]
-	path = src/github.com/pivotal-golang/lager
-	url = https://github.com/pivotal-golang/lager.git
