@@ -360,4 +360,6 @@ builds:
     version: 0.184.0
   3db7cd0a-fd89-415c-8193-2ad3c3d3188b:
     version: 0.185.0
+  9dd7e225-0f54-4ca1-a362-6192f0bad5da:
+    version: 0.186.0
 format-version: '2'
