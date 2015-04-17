@@ -4,5 +4,9 @@ image: docker:///concourse/concourse-ci
 
 platform: linux
 
+inputs:
+- name: release-develop
+- name: version
+
 run:
   path: release-develop/scripts/shipit

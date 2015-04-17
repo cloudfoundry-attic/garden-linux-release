@@ -3,10 +3,6 @@
 
 set -e -x
 
-# TODO remove this once garden-linux respects $PATH from docker images
-export GOROOT=/usr/local/go
-export PATH=$GOROOT/bin:$PATH
-
 cd $(dirname $0)/../
 
 export GOPATH=$PWD

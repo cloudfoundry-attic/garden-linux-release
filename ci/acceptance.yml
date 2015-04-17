@@ -3,6 +3,9 @@ image: docker:///cloudfoundry/golang-ci
 
 platform: linux
 
+inputs:
+- name: release-develop
+
 params:
   WARDEN_NETWORK: tcp
   WARDEN_ADDR: ""
