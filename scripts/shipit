@@ -20,7 +20,7 @@ git merge --no-edit master
 
 bosh -n create release --final --with-tarball --version "$VERSION"
 
-mv releases/garden-linux/*.tgz ../garden-${VERSION}.tgz
+mv releases/garden-linux/*.tgz ../garden-linux-${VERSION}.tgz
 
 git add -A
 git commit -m "release v${VERSION}"

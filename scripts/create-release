@@ -13,4 +13,4 @@ cd release-develop/
 
 bosh -n create release --with-tarball --version "${VERSION}"
 
-mv dev_releases/garden-linux/*.tgz ../garden-${VERSION}.tgz
+mv dev_releases/garden-linux/*.tgz ../garden-linux-${VERSION}.tgz
