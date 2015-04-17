@@ -7,6 +7,7 @@ platform: linux
 inputs:
 - name: release-develop
 - name: version
+- name: garden-ci
 
 run:
   path: release-develop/scripts/shipit
