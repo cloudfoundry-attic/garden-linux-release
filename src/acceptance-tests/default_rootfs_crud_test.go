@@ -31,6 +31,7 @@ var _ = Describe("With a container", func() {
 			stderr := gbytes.NewBuffer()
 
 			process, err := container.Run(garden.ProcessSpec{
+				User: "vcap",
 				Path: "sh",
 				Args: []string{"-c", "sleep 0.5; echo $FIRST; sleep 0.5; echo $SECOND >&2; sleep 0.5; exit 42"},
 				Env:  []string{"FIRST=hello", "SECOND=goodbye"},
@@ -49,6 +50,7 @@ var _ = Describe("With a container", func() {
 			stdout := gbytes.NewBuffer()
 
 			process, err := container.Run(garden.ProcessSpec{
+				User: "vcap",
 				Path: "sh",
 				Args: []string{"-c", "cat <&0"},
 			}, garden.ProcessIO{
@@ -67,6 +69,7 @@ var _ = Describe("With a container", func() {
 				stdout2 := gbytes.NewBuffer()
 
 				process, err := container.Run(garden.ProcessSpec{
+					User: "vcap",
 					Path: "sh",
 					Args: []string{"-c", "sleep 2; echo hello; sleep 0.5; echo goodbye; sleep 0.5; exit 42"},
 				}, garden.ProcessIO{
@@ -99,6 +102,7 @@ var _ = Describe("With a container", func() {
 				stdout := gbytes.NewBuffer()
 
 				process, err := container.Run(garden.ProcessSpec{
+					User: "vcap",
 					Path: "sh",
 					Args: []string{
 						"-c",
