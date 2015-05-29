@@ -44,7 +44,6 @@ case $1 in
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
       -snapshots="${snapshots_path}" \
-      -overlays=/var/vcap/data/garden/overlays \
       -graph=/var/vcap/data/garden/graph \
       -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/old/linux_backend/bin \
       -mtu=<%= p("garden.network_mtu") %> \
