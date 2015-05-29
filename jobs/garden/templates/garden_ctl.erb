@@ -74,12 +74,6 @@ case $1 in
     <% if_p("garden.port_pool.size") do |size| %> \
       -portPoolSize=<%= size %> \
     <% end %> \
-    <% if_p("garden.uid_pool.start") do |start| %> \
-      -uidPoolStart=<%= start %> \
-    <% end %> \
-    <% if_p("garden.uid_pool.size") do |size| %> \
-      -uidPoolSize=<%= size %> \
-    <% end %> \
     <% if_p("garden.insecure_docker_registry_list") do |list| %> \
       -insecureDockerRegistryList=<%= list.join(',') %> \
     <% end %> \
