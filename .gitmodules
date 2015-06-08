@@ -25,3 +25,6 @@
 [submodule "src/github.com/pivotal-golang/lager"]
 	path = src/github.com/pivotal-golang/lager
 	url = https://github.com/pivotal-golang/lager.git
+[submodule "src/btrfs-progs"]
+	path = src/btrfs-progs
+	url = git://git.kernel.org/pub/scm/linux/kernel/git/kdave/btrfs-progs.git

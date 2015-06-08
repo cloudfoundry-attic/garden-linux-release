@@ -34,5 +34,4 @@ jobs:
     garden:
       listen_network: tcp
       listen_address: 0.0.0.0:7777
-      uid_pool:
-        size: 1000
+      mount_btrfs_loopback: true

@@ -3,6 +3,7 @@ name: garden-linux
 
 dependencies:
   - golang_1.3
+  - btrfs-progs
 
 files:
   - garden-linux/**/*.go

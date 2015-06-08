@@ -9,6 +9,7 @@ packages:
   - iptables
   - shadow
   - busybox
+  - btrfs-progs
 
 properties:
   garden.listen_network:
@@ -75,3 +76,11 @@ properties:
 
   garden.insecure_docker_registry_list:
     description: "A list of IP:PORT tuples that we allow pulling docker images from using self-signed certificates."
+
+  garden.mount_btrfs_loopback:
+    description: "If true, garden should create a btrfs-formatted loopback device for graph storage"
+    default: true
+
+  garden.btrfs_store_size_mb:
+    description: "Size in MB of the BTRFS backing store for graph storage"
+    default: 3000

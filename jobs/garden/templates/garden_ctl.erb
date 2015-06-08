@@ -28,10 +28,9 @@ case $1 in
     mkdir -p $DATA_DIR
     mkdir -p $LOG_DIR
 
-    echo $$ > /var/vcap/sys/run/garden/garden.pid
-
     export PATH=/var/vcap/packages/shadow/sbin:$PATH
     export PATH=/var/vcap/packages/iptables/sbin:$PATH
+    export PATH=/var/vcap/packages/btrfs-progs/bin:$PATH
 
     mkdir -p /var/vcap/data/garden/depot
 
@@ -41,10 +40,41 @@ case $1 in
     snapshots_path=/var/vcap/data/garden/snapshots
     <% end %>
 
+    graph_path=/var/vcap/data/garden/graph
+
+    <% if p("garden.mount_btrfs_loopback") %>
+      backing_store=/var/vcap/data/garden/garden_graph_backing_store
+      loopback_device=/dev/garden_graph_root
+      mount_point=$graph_path
+
+      if [ ! -f $backing_store ]
+      then
+        echo "no backing store found at ${backing_store}: creating"
+        dd if=/dev/zero of=$backing_store bs=1M count=<%= p('garden.btrfs_store_size_mb') %>
+        rm -f $loopback_device
+        mknod $loopback_device b 7 200
+        losetup $loopback_device $backing_store
+        mkfs.btrfs $backing_store
+      else
+        echo "backing store already exists, skipping creation"
+      fi
+
+      if cat /proc/mounts | grep $mount_point
+      then
+        echo "btrfs already mounted at $mount_point"
+      else
+        echo "mounting btrfs volume"
+        mkdir -p $mount_point
+        mount -t btrfs $loopback_device $mount_point
+      fi
+    <% end %>
+
+    echo $$ > /var/vcap/sys/run/garden/garden.pid
+
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
       -snapshots="${snapshots_path}" \
-      -graph=/var/vcap/data/garden/graph \
+      -graph=$graph_path \
       -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/old/linux_backend/bin \
       -mtu=<%= p("garden.network_mtu") %> \
       -disableQuotas=<%= !p("garden.disk_quota_enabled") %> \
