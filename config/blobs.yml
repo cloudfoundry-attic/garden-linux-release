@@ -1,21 +1,17 @@
 ---
-golang/go1.3.1.linux-amd64.tar.gz:
-  object_id: deda46b4-5a57-428e-b6dc-42e30a4b67b1
-  sha: !binary |-
-    M2FmMDExY2MxOWIyMWM3MTgwZjI2MDRmZDg1ZmJjNGRkZGU5NzE0Mw==
-  size: 51930765
 iptables/iptables-1.4.21.tar.bz2:
   object_id: 66b91b2f-bbd2-42f7-af53-286e7cefa63a
-  sha: !binary |-
-    ODVkNDE2MDUzNzU0NmEyM2E3ZTQyYmMyNmRkN2VlNjJhMGVkZTRjOA==
+  sha: 85d4160537546a23a7e42bc26dd7ee62a0ede4c8
   size: 547439
 shadow/shadow-4.2.1.tar.gz:
   object_id: aea45a48-df25-424e-9ddb-bbcc89ab3cbb
-  sha: !binary |-
-    MWQyMDU0MTg4NjNkZDAyYjJiOGFmMGZhNzhmY2NlNWQ3Yzg0OGQxZg==
+  sha: 1d205418863dd02b2b8af0fa78fcce5d7c848d1f
   size: 3686676
 busybox/busybox.tar.gz:
   object_id: cc631520-0a72-4cb1-8c87-700f6bdd3305
-  sha: !binary |-
-    NjQxMDYxN2IyNjY0NGFiM2ZhYzkzNzI0OTRjYWJlMzRlMjY5OTcwYw==
+  sha: 6410617b26644ab3fac9372494cabe34e269970c
   size: 1145751
+golang/go1.4.2.linux-amd64.tar.gz:
+  object_id: 1f4bc926-3232-4d41-9fb1-a253dd778f02
+  sha: 5020af94b52b65cc9b6f11d50a67e4bae07b0aff
+  size: 62442704
