@@ -19,4 +19,4 @@ go install -tags daemon ${REPO_NAME}
 
 cd $REPO_DIR
 
-make skeleton
+make
