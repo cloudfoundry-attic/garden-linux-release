@@ -9,6 +9,34 @@ mkdir -p /var/vcap/sys/log/monit
 exec 1>> /var/vcap/sys/log/monit/garden.out.log
 exec 2>> /var/vcap/sys/log/monit/garden.err.log
 
+# copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
+# break out of bosh-lite device limitations
+function permit_device_control() {
+  local devices_mount_info=$(cat /proc/self/cgroup | grep devices)
+
+  if [ -z "$devices_mount_info" ]; then
+    # cgroups not set up; must not be in a container
+    return
+  fi
+
+  local devices_subsytems=$(echo $devices_mount_info | cut -d: -f2)
+  local devices_subdir=$(echo $devices_mount_info | cut -d: -f3)
+
+  if [ "$devices_subdir" = "/" ]; then
+    # we're in the root devices cgroup; must not be in a container
+    return
+  fi
+
+  if [ ! -e /tmp/devices-cgroup ]; then
+    # mount our container's devices subsystem somewhere
+    mkdir /tmp/devices-cgroup
+    mount -t cgroup -o $devices_subsytems none /tmp/devices-cgroup
+  fi
+
+  # permit our cgroup to do everything with all devices
+  echo a > /tmp/devices-cgroup${devices_subdir}/devices.allow
+}
+
 case $1 in
 
   start)
@@ -49,6 +77,8 @@ case $1 in
 
       if [ ! -f $backing_store ]
       then
+        permit_device_control
+
         echo "no backing store found at ${backing_store}: creating"
         dd if=/dev/zero of=$backing_store bs=1M count=<%= p('garden.btrfs_store_size_mb') %>
         rm -f $loopback_device
