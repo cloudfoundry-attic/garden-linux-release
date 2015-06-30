@@ -80,7 +80,9 @@ case $1 in
         permit_device_control
 
         echo "no backing store found at ${backing_store}: creating"
-        dd if=/dev/zero of=$backing_store bs=1M count=<%= p('garden.btrfs_store_size_mb') %>
+        touch $backing_store
+        truncate -s <%= p('garden.btrfs_store_size_mb') %>M $backing_store
+        
         rm -f $loopback_device
         mknod $loopback_device b 7 200
         losetup $loopback_device $backing_store
