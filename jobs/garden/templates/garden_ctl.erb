@@ -72,21 +72,23 @@ case $1 in
 
     <% if p("garden.mount_btrfs_loopback") %>
       backing_store=/var/vcap/data/garden/garden_graph_backing_store
-      loopback_device=/dev/garden_graph_root
       mount_point=$graph_path
 
       if [ ! -f $backing_store ]
       then
         permit_device_control
+        for i in $(seq 0 64); do
+          if ! mknod -m 0660 /dev/loop$i b 7 $i; then
+            break
+          fi
+        done
 
         echo "no backing store found at ${backing_store}: creating"
         touch $backing_store
         truncate -s <%= p('garden.btrfs_store_size_mb') %>M $backing_store
         
-        rm -f $loopback_device
-        mknod $loopback_device b 7 200
-        losetup $loopback_device $backing_store
-        mkfs.btrfs $backing_store
+        loopback_device=$(losetup -f --show $backing_store)
+        mkfs.btrfs --nodiscard $loopback_device
       else
         echo "backing store already exists, skipping creation"
       fi
