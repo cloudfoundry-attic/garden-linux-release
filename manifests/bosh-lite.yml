@@ -2,7 +2,7 @@
 name: garden
 
 # replace with bosh status --uuid
-director_uuid: 3f695519-5a17-480f-879a-582dbe31131e
+director_uuid: <%= `bosh target lite > /dev/null 2>&1 && bosh status --uuid` %>
 
 releases:
   - name: garden-linux
