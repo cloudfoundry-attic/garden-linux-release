@@ -486,4 +486,6 @@ builds:
     version: 0.252.0
   64d765c7-ad8a-410a-81ff-0a558df5048c:
     version: 0.253.0
+  19db464d-c932-4d93-a7c9-b319c5e7e96c:
+    version: 0.254.0
 format-version: '2'
