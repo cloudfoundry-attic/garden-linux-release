@@ -68,7 +68,7 @@ case $1 in
     snapshots_path=/var/vcap/data/garden/snapshots
     <% end %>
 
-    graph_path=/var/vcap/data/garden/graph
+    graph_path=/var/vcap/data/garden/btrfs_graph
 
     <% if p("garden.mount_btrfs_loopback") %>
       backing_store=/var/vcap/data/garden/garden_graph_backing_store
