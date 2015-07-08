@@ -67,40 +67,46 @@ case $1 in
     <% else %>
     snapshots_path=/var/vcap/data/garden/snapshots
     <% end %>
-
     graph_path=/var/vcap/data/garden/btrfs_graph
 
     <% if p("garden.mount_btrfs_loopback") %>
-      backing_store=/var/vcap/data/garden/garden_graph_backing_store
-      mount_point=$graph_path
+    backing_store=/var/vcap/data/garden/garden_graph_backing_store
+    mount_point=$graph_path
 
-      if [ ! -f $backing_store ]
-      then
-        permit_device_control
-        for i in $(seq 0 64); do
-          if ! mknod -m 0660 /dev/loop$i b 7 $i; then
-            break
-          fi
-        done
+    if [ ! -f $backing_store ]
+    then
+      permit_device_control
+      for i in $(seq 0 64); do
+        if ! mknod -m 0660 /dev/loop$i b 7 $i; then
+          break
+        fi
+      done
 
-        echo "no backing store found at ${backing_store}: creating"
-        touch $backing_store
-        truncate -s <%= p('garden.btrfs_store_size_mb') %>M $backing_store
-        
-        loopback_device=$(losetup -f --show $backing_store)
-        mkfs.btrfs --nodiscard $loopback_device
-      else
-        echo "backing store already exists, skipping creation"
+      echo "no backing store found at ${backing_store}: creating"
+      touch $backing_store
+      truncate -s <%= p('garden.btrfs_store_size_mb') %>M $backing_store
+      
+      loopback_device=$(losetup -f --show $backing_store)
+      mkfs.btrfs --nodiscard $loopback_device
+    else
+      echo "backing store already exists, skipping creation"
+    fi
+
+    if cat /proc/mounts | grep $mount_point
+    then
+      echo "btrfs already mounted at $mount_point"
+    else
+      loopback_device="$(losetup -j $backing_store | cut -d':' -f1)"
+
+      if [ -z $loopback_device ]; then
+       echo "Cannot find loopback_device for mount point $backing_store">&2
+       exit 1
       fi
 
-      if cat /proc/mounts | grep $mount_point
-      then
-        echo "btrfs already mounted at $mount_point"
-      else
-        echo "mounting btrfs volume"
-        mkdir -p $mount_point
-        mount -t btrfs $loopback_device $mount_point
-      fi
+      echo "mounting btrfs volume"
+      mkdir -p $mount_point
+      mount -t btrfs $loopback_device $mount_point
+    fi
     <% end %>
 
     echo $$ > /var/vcap/sys/run/garden/garden.pid
