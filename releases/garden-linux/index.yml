@@ -502,4 +502,6 @@ builds:
     version: 0.260.0
   4fdff84d-427a-4d79-a474-24a67309b00b:
     version: 0.261.0
+  45d1409d-f1b0-44b4-8750-4e23caf005d5:
+    version: 0.262.0
 format-version: '2'
