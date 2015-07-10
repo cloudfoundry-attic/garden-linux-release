@@ -70,6 +70,7 @@ case $1 in
     graph_path=/var/vcap/data/garden/btrfs_graph
 
     <% if p("garden.mount_btrfs_loopback") %>
+    mountpoint -q /sys || mount -t sysfs sysfs /sys
     backing_store=/var/vcap/data/garden/garden_graph_backing_store
     mount_point=$graph_path
 
@@ -85,7 +86,7 @@ case $1 in
       echo "no backing store found at ${backing_store}: creating"
       touch $backing_store
       truncate -s <%= p('garden.btrfs_store_size_mb') %>M $backing_store
-      
+
       loopback_device=$(losetup -f --show $backing_store)
       mkfs.btrfs --nodiscard $loopback_device
     else
