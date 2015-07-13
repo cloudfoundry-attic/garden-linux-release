@@ -7,7 +7,7 @@ inputs:
 - name: release-develop
 
 params:
-  GARDEN_ADDR: ""
+  GARDEN_ADDRESS: ""
 
 run:
   path: release-develop/scripts/integration-tests
