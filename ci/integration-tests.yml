@@ -7,8 +7,7 @@ inputs:
 - name: release-develop
 
 params:
-  WARDEN_NETWORK: tcp
-  WARDEN_ADDR: ""
+  GARDEN_ADDR: ""
 
 run:
-  path: release-develop/scripts/acceptance
+  path: release-develop/scripts/integration-tests
