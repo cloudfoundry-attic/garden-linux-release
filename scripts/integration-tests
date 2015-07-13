@@ -5,8 +5,8 @@ set -e -x
 
 cd $(dirname $0)/../
 
-export GOPATH=$PWD:$PWD/src/garden-integration-tests/Godeps/_workspace
-export PATH=$GOPATH/bin:$PATH
+export GOPATH=$PWD/src/garden-integration-tests/Godeps/_workspace:$PWD
+export PATH=$PWD/src/garden-integration-tests/Godeps/_workspace/bin:$PWD/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 
