@@ -30,4 +30,4 @@
 	url = git://git.kernel.org/pub/scm/linux/kernel/git/kdave/btrfs-progs.git
 [submodule "src/garden-integration-tests"]
 	path = src/garden-integration-tests
-	url = git@github.com:cloudfoundry-incubator/garden-integration-tests.git
+	url = https://github.com/cloudfoundry-incubator/garden-integration-tests.git
