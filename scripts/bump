@@ -15,7 +15,7 @@ git config --global user.name "CI Bot"
 
 git merge --no-edit master
 
-git submodule --quiet update --remote
+git submodule update --remote
 
 pushd src/garden-linux/
   git checkout $WARDEN_LINUX_SHA
