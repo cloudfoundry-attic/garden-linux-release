@@ -3,3 +3,4 @@ name: btrfs-progs
 
 files:
   - btrfs-progs/**/*
+  - btrfs-tools/btrfs-tools.zip
