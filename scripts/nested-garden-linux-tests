@@ -1,0 +1,19 @@
+#!/bin/bash
+# vim: set ft=sh
+
+set -ex
+
+cd garden-linux-release
+
+export GOROOT=/usr/local/go
+export PATH=$GOROOT/bin:$PATH
+
+export GOPATH=$PWD/gopath
+export PATH=$GOPATH/bin:$PATH
+
+mkdir -p $GOPATH/src/github.com/cloudfoundry-incubator
+cp -r src/garden-linux $GOPATH/src/github.com/cloudfoundry-incubator/garden-linux
+
+cd src/garden-linux
+
+./scripts/drone-test "$@"

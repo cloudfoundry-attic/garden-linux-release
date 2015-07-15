@@ -10,4 +10,4 @@ params:
   GARDEN_ADDRESS: ""
 
 run:
-  path: release-develop/scripts/integration-tests
+  path: release-develop/scripts/non-nested-tests
