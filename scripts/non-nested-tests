@@ -11,4 +11,5 @@ export PATH=$PWD/src/garden-integration-tests/Godeps/_workspace/bin:$PWD/bin:$PA
 go install github.com/onsi/ginkgo/ginkgo
 
 cd src/garden-integration-tests
+export BTRFS_SUPPORTED=true
 ginkgo -p -nodes=4

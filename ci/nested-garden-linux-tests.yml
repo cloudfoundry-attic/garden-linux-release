@@ -1,0 +1,10 @@
+---
+image: docker:///cloudfoundry/garden-ci-ubuntu
+
+platform: linux
+
+inputs:
+- name: garden-linux-release
+
+run:
+  path: garden-linux-release/scripts/nested-garden-linux-tests
