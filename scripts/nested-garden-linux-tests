@@ -3,7 +3,7 @@
 
 set -ex
 
-cd garden-linux-release
+cd $(dirname $0)/..
 
 export GOROOT=/usr/local/go
 export PATH=$GOROOT/bin:$PATH
