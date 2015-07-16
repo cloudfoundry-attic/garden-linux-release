@@ -16,6 +16,6 @@ golang/go1.4.2.linux-amd64.tar.gz:
   sha: 5020af94b52b65cc9b6f11d50a67e4bae07b0aff
   size: 62442704
 btrfs-tools/btrfs-tools.zip:
-  object_id: 281c2157-1a54-477b-8ed6-c9700858d6b0
-  sha: 0f5d3046549c5df7fed6f1c5183150321ab2c654
-  size: 8701166
+  object_id: 04f236d3-98dc-45ee-9bb3-a2a5ececa4fb
+  sha: a273d2adb936a6887649dd856b0d72af287e3e22
+  size: 8700883
