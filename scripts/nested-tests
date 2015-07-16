@@ -30,6 +30,11 @@ mkdir $tmpdir/graph
   -disableQuotas=true \
   -listenNetwork=tcp \
   -listenAddr=0.0.0.0:7777 \
+  -denyNetworks= \
+  -allowNetworks= \
+  -allowHostAccess=false \
+  -mtu=1500 \
+  -containerGraceTime=5m \
   -rootfs=/opt/warden/rootfs &
 
 sleep 5
@@ -40,5 +45,5 @@ export PATH=$PWD/src/garden-integration-tests/Godeps/_workspace/bin:$PWD/bin:$PA
 go install github.com/onsi/ginkgo/ginkgo
 
 cd src/garden-integration-tests
-export GARDEN_ADDRESS=localhost:7777
+export GARDEN_ADDRESS=$(hostname):7777
 ginkgo -p -nodes=4
