@@ -1,6 +1,3 @@
-[submodule "src/garden-linux"]
-	path = src/garden-linux
-	url = https://github.com/cloudfoundry-incubator/garden-linux
 [submodule "src/github.com/cloudfoundry-incubator/garden"]
 	path = src/github.com/cloudfoundry-incubator/garden
 	url = https://github.com/cloudfoundry-incubator/garden
@@ -25,6 +22,9 @@
 [submodule "src/github.com/pivotal-golang/lager"]
 	path = src/github.com/pivotal-golang/lager
 	url = https://github.com/pivotal-golang/lager.git
-[submodule "src/garden-integration-tests"]
-	path = src/garden-integration-tests
+[submodule "src/github.com/cloudfoundry-incubator/garden-linux"]
+	path = src/github.com/cloudfoundry-incubator/garden-linux
+	url = https://github.com/cloudfoundry-incubator/garden-linux.git
+[submodule "src/github.com/cloudfoundry-incubator/garden-integration-tests"]
+	path = src/github.com/cloudfoundry-incubator/garden-integration-tests
 	url = https://github.com/cloudfoundry-incubator/garden-integration-tests.git
