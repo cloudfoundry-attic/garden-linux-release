@@ -1,3 +1,6 @@
 #!/bin/bash -e
 
-fly --target $GARDEN_REMOTE_ATC_URL e -x -p -i release-develop=. -c $1
+build_yml=$1
+shift
+
+fly --target $GARDEN_REMOTE_ATC_URL e -x -p -i release-develop=. -c $build_yml $@
