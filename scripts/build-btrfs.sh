@@ -6,24 +6,34 @@ set -e -x
 
 # use run-btrfs-build-in-docker to run this script inside a docker container
 
+REPO_URL=https://github.com/kdave/btrfs-progs.git
+TAG=$1
+
+
 apt-get update
 apt-get install -y asciidoc xmlto --no-install-recommends
 apt-get install -y pkg-config autoconf
 apt-get install -y uuid-dev libattr1-dev zlib1g-dev libacl1-dev e2fslibs-dev libblkid-dev liblzo2-dev
-apt-get install -y zip make
+apt-get install -y git-core make
 
-
-cd /root/release-dir/src/btrfs-progs
 mkdir -p /tmp/output
+mkdir -p /tmp/input
 
-./autogen.sh
-./configure --prefix=/tmp/output
-make
-make install
+pushd /tmp/input
+	git clone $REPO_URL
+	cd btrfs-progs
+	git checkout $TAG
+	./autogen.sh
+	./configure --prefix=/tmp/output
+	make
+	make install
+popd
 
 pushd /tmp/output
 	rm -rf share
-	zip -r /root/release-dir/btrfs-tools.zip ./*
+	rm -rf /root/release-dir/btrfs-progs-$TAG.tar.gz
+	tar -czf /root/release-dir/btrfs-progs-$TAG.tar.gz ./*
 popd
 
 rm -rf /tmp/output
+rm -rf /tmp/input
