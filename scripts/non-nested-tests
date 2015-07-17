@@ -5,11 +5,11 @@ set -e -x
 
 cd $(dirname $0)/../
 
-export GOPATH=$PWD/src/garden-integration-tests/Godeps/_workspace:$PWD
-export PATH=$PWD/src/garden-integration-tests/Godeps/_workspace/bin:$PWD/bin:$PATH
+export GOPATH=$PWD/src/github.com/cloudfoundry-incubator/garden-integration-tests/Godeps/_workspace:$PWD
+export PATH=$PWD/src/github.com/cloudfoundry-incubator/garden-integration-tests/Godeps/_workspace/bin:$PWD/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 
-cd src/garden-integration-tests
+cd src/github.com/cloudfoundry-incubator/garden-integration-tests
 export BTRFS_SUPPORTED=true
 ginkgo -p -nodes=4
