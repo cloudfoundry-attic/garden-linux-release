@@ -37,8 +37,6 @@ mkdir $tmpdir/graph
 sleep 5
 popd
 
-export GOPATH=$PWD/src/github.com/cloudfoundry-incubator/garden-integration-tests/Godeps/_workspace
-export PATH=$GOPATH/bin:$PATH
 go install github.com/onsi/ginkgo/ginkgo
 cd src/github.com/cloudfoundry-incubator/garden-integration-tests
 export GARDEN_ADDRESS=$(hostname):7777

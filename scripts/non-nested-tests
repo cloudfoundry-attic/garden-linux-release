@@ -5,8 +5,8 @@ set -e -x
 
 cd $(dirname $0)/../
 
-export GOPATH=$PWD/src/github.com/cloudfoundry-incubator/garden-integration-tests/Godeps/_workspace:$PWD
-export PATH=$PWD/src/github.com/cloudfoundry-incubator/garden-integration-tests/Godeps/_workspace/bin:$PWD/bin:$PATH
+export GOPATH=$PWD
+export PATH=$PWD/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 

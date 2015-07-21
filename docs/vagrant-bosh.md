@@ -6,10 +6,19 @@ Vagrant BOSH is used to deploy Garden Linux to its own virtual machine, i.e. not
 To get started with [Vagrant BOSH](https://github.com/cppforlife/vagrant-bosh):
 
 ```sh
+# Install direnv (and then update .bashrc as prompted)
+brew install direnv
+
 cd garden-linux-release/
+# and issue `direnv allow` to accept the .envrc settings here
 
 # Obtain submodules
 git submodule update --init --recursive
+
+# Apply docker build hack
+goto docker/docker
+./hack/make.sh
+cd -
 
 # install the Vagrant BOSH provisioner
 vagrant plugin install vagrant-bosh
