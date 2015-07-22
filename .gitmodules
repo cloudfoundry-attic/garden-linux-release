@@ -90,7 +90,7 @@
 	url = https://github.com/pivotal-golang/archiver
 [submodule "src/github.com/vito/gosub"]
 	path = src/github.com/vito/gosub
-	url = https://github.com/vito/gosub
+	url = https://github.com/glyn/gosub
 	branch = master
 [submodule "src/github.com/codegangsta/cli"]
 	path = src/github.com/codegangsta/cli
