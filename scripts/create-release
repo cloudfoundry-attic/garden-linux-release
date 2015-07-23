@@ -11,6 +11,10 @@ fi
 
 cd release-develop/
 
+pushd src/github.com/docker/docker
+./hack/make.sh || true
+popd
+
 bosh -n create release --with-tarball --version "${VERSION}"
 
 mv dev_releases/garden-linux/*.tgz ../garden-linux-${VERSION}.tgz
