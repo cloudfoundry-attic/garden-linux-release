@@ -11,9 +11,11 @@ fi
 
 cd release-develop/
 
+export GOPATH=$PWD
 pushd src/github.com/docker/docker
 ./hack/make.sh || true
 popd
+unset GOPATH
 
 bosh -n create release --with-tarball --version "${VERSION}"
 
