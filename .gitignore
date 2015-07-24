@@ -28,5 +28,5 @@ blobs
 /deployments-runtime
 /*.tgz
 .vagrant/
-pkg
-bin
+/pkg
+/bin

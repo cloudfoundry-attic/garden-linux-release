@@ -15,11 +15,6 @@ cd garden-linux-release/
 # Obtain submodules
 git submodule update --init --recursive
 
-# Apply docker build hack
-goto docker/docker
-./hack/make.sh
-cd -
-
 # install the Vagrant BOSH provisioner
 vagrant plugin install vagrant-bosh
 

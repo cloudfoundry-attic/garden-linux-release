@@ -22,7 +22,7 @@
 	url = https://github.com/pivotal-golang/lager.git
 [submodule "src/github.com/cloudfoundry-incubator/garden-linux"]
 	path = src/github.com/cloudfoundry-incubator/garden-linux
-	url = https://github.com/cloudfoundry-incubator/garden-linux.git
+	url = git@github.com:cloudfoundry-incubator/garden-linux.git
 	branch = master
 [submodule "src/github.com/Sirupsen/logrus"]
 	path = src/github.com/Sirupsen/logrus
@@ -48,9 +48,6 @@
 [submodule "src/github.com/docker/distribution"]
 	path = src/github.com/docker/distribution
 	url = https://github.com/docker/distribution
-[submodule "src/github.com/docker/docker"]
-	path = src/github.com/docker/docker
-	url = https://github.com/docker/docker
 [submodule "src/github.com/docker/libcontainer"]
 	path = src/github.com/docker/libcontainer
 	url = https://github.com/docker/libcontainer
