@@ -98,10 +98,8 @@ case $1 in
       echo "btrfs already mounted at $mount_point"
     else
       loopback_device="$(losetup -j $backing_store | cut -d':' -f1)"
-
       if [ -z $loopback_device ]; then
-       echo "Cannot find loopback_device for mount point $backing_store">&2
-       exit 1
+       loopback_device=$(losetup -f --show $backing_store)
       fi
 
       echo "mounting btrfs volume"
