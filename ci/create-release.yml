@@ -9,4 +9,4 @@ inputs:
 - name: version
 
 run:
-  path: release-develop/scripts/create-release
+  path: release-develop/ci/scripts/create-release

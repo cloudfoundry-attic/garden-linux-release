@@ -10,4 +10,4 @@ inputs:
 - name: garden-ci
 
 run:
-  path: release-develop/scripts/shipit
+  path: release-develop/ci/scripts/shipit

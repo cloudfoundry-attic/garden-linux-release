@@ -3,7 +3,7 @@
 
 set -ex
 
-cd $(dirname $0)/..
+cd $(dirname $0)/../..
 
 export GOROOT=/usr/local/go
 export PATH=$GOROOT/bin:$PATH

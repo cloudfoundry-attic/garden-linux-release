@@ -7,4 +7,4 @@ inputs:
 - name: release-develop
 
 run:
-  path: release-develop/scripts/nested-tests
+  path: release-develop/ci/scripts/nested-tests
