@@ -1,0 +1,16 @@
+#!/bin/bash
+set -e -x
+
+ROOT_DIR_PATH=$(cd $(dirname $0)/.. && pwd)
+cd $ROOT_DIR_PATH
+
+rm ./bin/ginkgo || true
+go install github.com/onsi/ginkgo
+
+pushd src/github.com/cloudfoundry-incubator/garden-linux
+	ginkgo -r
+popd
+
+./scripts/remote-fly ci/nested-garden-linux-tests.yml
+
+./scripts/remote-fly ci/nested-tests.yml

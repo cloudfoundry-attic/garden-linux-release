@@ -1,6 +1,7 @@
 #!/bin/bash
+ROOT_DIR_PATH=$(cd $(dirname $0)/.. && pwd)
 
-go run src/github.com/vito/gosub/*.go list \
+go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/cloudfoundry-incubator/garden-linux/... \
   -a github.com/cloudfoundry-incubator/garden-linux/container_daemon/initd/... \
   -a github.com/cloudfoundry-incubator/garden-linux/container_daemon/wsh/... \
@@ -14,5 +15,4 @@ go run src/github.com/vito/gosub/*.go list \
   -t github.com/cloudfoundry-incubator/garden-linux/integration/... \
   -t github.com/cloudfoundry-incubator/garden-integration-tests/... \
   -a github.com/vito/gosub/... \
-  -a github.com/syndtr/... \
-  | xargs go run src/github.com/vito/gosub/*.go sync
+  -a github.com/syndtr/...
