@@ -7,6 +7,7 @@ dependencies:
 
 files:
   - github.com/cloudfoundry-incubator/garden-linux/Makefile
+  - github.com/cloudfoundry-incubator/garden-linux/linux_backend/**/*
   - github.com/cloudfoundry-incubator/garden-linux/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/detach_test/*.go # gosub
@@ -115,8 +116,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/system_info/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system_info/fake_system_info/*.go # gosub
   - github.com/vito/gosub/*.go # gosub
-  - github.com/syndtr/gocapability/capability/*.go # gosub
-  - github.com/syndtr/gocapability/capability/enumgen/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-integration-tests/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/*.go # gosub
   - github.com/onsi/ginkgo/*.go # gosub
@@ -248,3 +247,6 @@ files:
   - github.com/pivotal-golang/lager/lagertest/*.go # gosub
   - github.com/tedsuo/ifrit/ginkgomon/*.go # gosub
   - github.com/codegangsta/cli/*.go # gosub
+  - github.com/syndtr/gocapability/capability/*.go # gosub
+  - github.com/syndtr/gocapability/capability/enumgen/*.go # gosub
+  - github.com/docker/docker/pkg/mount/*.go # gosub

@@ -14,5 +14,9 @@ go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/cloudfoundry-incubator/garden-linux/iodaemon/winsizereporter/... \
   -t github.com/cloudfoundry-incubator/garden-linux/integration/... \
   -t github.com/cloudfoundry-incubator/garden-integration-tests/... \
-  -a github.com/vito/gosub/... \
-  -a github.com/syndtr/...
+  -a github.com/vito/gosub/...
+
+# Linux only packages
+go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
+  -a github.com/syndtr/... \
+  -a github.com/docker/docker/pkg/mount/...
