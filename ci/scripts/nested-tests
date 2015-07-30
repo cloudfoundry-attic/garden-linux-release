@@ -13,6 +13,10 @@ export PATH=$GOPATH/bin:$PATH
 pushd src/github.com/cloudfoundry-incubator/garden-linux
 make
 
+if ! grep -qs '/sys' /proc/mounts; then
+  mount -t sysfs sysfs /sys
+fi
+
 tmpdir=/tmp/dir
 rm -fr $tmpdir
 mkdir -p $tmpdir/depot
