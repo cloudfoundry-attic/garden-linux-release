@@ -82,5 +82,5 @@ properties:
     default: true
 
   garden.btrfs_store_size_mb:
-    description: "Size in MB of the BTRFS backing store for graph storage"
-    default: 3000
+    description: "Size in MB of the BTRFS backing store for graph storage. Created as a spare file, so can be larger than available disk (at the risk of running out of disk space eventually)"
+    default: 20971520
