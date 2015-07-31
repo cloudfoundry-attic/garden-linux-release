@@ -91,7 +91,9 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/port_pool/fake_port_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process_tracker/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/process_tracker/fake_linker/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process_tracker/fake_process_tracker/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/process_tracker/fake_signaller/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process_tracker/writer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_lock/*.go # gosub
@@ -128,6 +130,7 @@ files:
   - github.com/pivotal-golang/localip/*.go # gosub
   - github.com/pivotal-golang/archiver/extractor/test_helper/*.go # gosub
   - github.com/Sirupsen/logrus/*.go # gosub
+  - github.com/blang/semver/*.go # gosub
   - github.com/bmizerany/pat/*.go # gosub
   - github.com/cloudfoundry-incubator/cf-debug-server/*.go # gosub
   - github.com/cloudfoundry-incubator/cf-lager/*.go # gosub
