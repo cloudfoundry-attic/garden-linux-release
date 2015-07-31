@@ -99,3 +99,7 @@
 [submodule "src/github.com/syndtr/gocapability"]
 	path = src/github.com/syndtr/gocapability
 	url = https://github.com/syndtr/gocapability
+[submodule "src/github.com/blang/semver"]
+	path = src/github.com/blang/semver
+	url = https://github.com/blang/semver
+	branch = master
