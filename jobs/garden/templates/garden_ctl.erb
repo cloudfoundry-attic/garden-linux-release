@@ -5,9 +5,11 @@ LOG_DIR=/var/vcap/sys/log/garden
 PIDFILE=$RUN_DIR/garden.pid
 DATA_DIR=/var/vcap/data/garden
 
-mkdir -p /var/vcap/sys/log/monit
-exec 1>> /var/vcap/sys/log/monit/garden.out.log
-exec 2>> /var/vcap/sys/log/monit/garden.err.log
+function setup() {
+  mkdir -p /var/vcap/sys/log/monit
+  exec 1>> /var/vcap/sys/log/monit/garden.out.log
+  exec 2>> /var/vcap/sys/log/monit/garden.err.log
+}
 
 # copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
 # break out of bosh-lite device limitations
@@ -37,9 +39,30 @@ function permit_device_control() {
   echo a > /tmp/devices-cgroup${devices_subdir}/devices.allow
 }
 
+function backing_store_size() {
+  local configured=1
+  local configured_store_size_k=0
+  if [[ -1 = $1 ]]; then
+    configured=0
+  else
+    configured_store_size_k=$(echo $1*1024 | bc)
+  fi
+
+  local backing_store_path=$2
+  local df_output=$($3 $2)
+  local available_size_k=$(echo "$df_output" | awk '{ print $4 }' | tail -n 1)
+
+  if [[ 0 = $configured || ($available_size_k < $configured_store_size_k) ]]; then
+    echo "$available_size_k"K
+  else     
+    echo "$configured_store_size_k"K
+  fi
+}
+
 case $1 in
 
   start)
+    setup
     if [ -f "$PIDFILE" ]; then
       pid=$(head -1 "$PIDFILE")
 
@@ -85,7 +108,7 @@ case $1 in
 
       echo "no backing store found at ${backing_store}: creating"
       touch $backing_store
-      truncate -s <%= p('garden.btrfs_store_size_mb') %>M $backing_store
+      truncate -s $(backing_store_size <%= p('garden.btrfs_store_size_mb')%> "/var/vcap/data" "df -k") $backing_store
 
       loopback_device=$(losetup -f --show $backing_store)
       mkfs.btrfs --nodiscard $loopback_device
@@ -152,6 +175,7 @@ case $1 in
     ;;
 
   stop)
+    setup
     pid=$(cat $PIDFILE)
 
     for i in $(seq 30); do
