@@ -26,15 +26,19 @@ gem install bosh_cli --no-ri --no-rdoc -v 1.2652.0
 vagrant up
 ```
 
-
 ## Kick the tyres
 
-Use the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api) against endpoint `http://127.0.0.1:7777` to create a container, then:
+Use the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api) against endpoint `http://127.0.0.1:7777` to create a container (the REST api is considered private and is not supported, but it's useful for development):
+
 ```sh
 cd garden-linux-release/
 
-# spawn a process
-#
+# Create a container. This call will return the handle of the new container.
+curl -H "Content-Type: application/json" \
+  -XPOST http://127.0.0.1:7777/containers/ \
+  -d '{}'
+
+# Now spawn a process. Replace ${handle} with the output from the previous call.
 # curl will choke here as the protocol is hijacked, but...it probably worked.
 curl -H "Content-Type: application/json" \
   -XPOST http://127.0.0.1:7777/containers/${handle}/processes \
