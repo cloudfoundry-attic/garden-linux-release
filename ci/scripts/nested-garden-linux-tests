@@ -20,4 +20,5 @@ if ! grep -qs '/sys' /proc/mounts; then
   mount -t sysfs sysfs /sys
 fi
 
+export BTRFS_SUPPORTED=true
 ./scripts/drone-test "$@"
