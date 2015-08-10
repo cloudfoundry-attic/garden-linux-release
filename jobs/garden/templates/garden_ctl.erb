@@ -45,7 +45,7 @@ function backing_store_size() {
   if [[ -1 = $1 ]]; then
     configured=0
   else
-    configured_store_size_k=$(echo $1*1024 | bc)
+    configured_store_size_k=$(($1*1024))
   fi
 
   local backing_store_path=$2
