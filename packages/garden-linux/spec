@@ -47,6 +47,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/containerizer/system/fake_user/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/containerizer/system/pivotter/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/containerizer/wshd/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/debug/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/hook/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/hook/hook/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/bind_mount/*.go # gosub
