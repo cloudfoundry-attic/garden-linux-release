@@ -1,0 +1,10 @@
+---
+platform: linux
+image: docker:///concourse/git-resource
+
+inputs:
+  - name: release-master
+  - name: release-develop
+
+run:
+  path: release-develop/ci/scripts/merge-master
