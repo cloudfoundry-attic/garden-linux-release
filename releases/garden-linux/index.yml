@@ -576,4 +576,6 @@ builds:
     version: 0.297.0
   c16ec77c-2115-4e0f-8041-00c22860b439:
     version: 0.298.0
+  16b52eb7-c5e5-4061-aafa-632549db1e8b:
+    version: 0.299.0
 format-version: '2'
