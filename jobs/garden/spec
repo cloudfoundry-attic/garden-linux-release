@@ -84,3 +84,12 @@ properties:
   garden.btrfs_store_size_mb:
     description: "Size in MB of the BTRFS backing store for graph storage (-1 to use all available space)"
     default: -1
+
+  env.http_proxy:
+    description: Http proxy to connect to docker hub 
+
+  env.https_proxy:
+    description: Https proxy to connect to docker hub
+
+  env.no_proxy:
+    description: No proxy environment variable
