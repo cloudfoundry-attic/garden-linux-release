@@ -582,4 +582,6 @@ builds:
     version: 0.300.0
   9ab9bbb0-33ce-4d72-be88-7aee0cc0c250:
     version: 0.301.0
+  fe99a34b-9ae2-4694-83d8-273d04da8268:
+    version: 0.302.0
 format-version: '2'
