@@ -59,6 +59,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/integration/networking/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/performance/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/runner/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/integration/test-images/empty_ls/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/cmd/iodaemon/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/link/*.go # gosub
