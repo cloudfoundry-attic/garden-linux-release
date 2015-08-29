@@ -86,10 +86,10 @@ properties:
     default: -1
 
   env.http_proxy:
-    description: Http proxy to connect to docker hub 
+    description: Http proxy that Garden process should use 
 
   env.https_proxy:
-    description: Https proxy to connect to docker hub
+    description: Https proxy that Garden process should use
 
   env.no_proxy:
-    description: No proxy environment variable
+    description: List of comma-separated hosts that should skip connecting to the proxy
