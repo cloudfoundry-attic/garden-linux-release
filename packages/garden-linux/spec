@@ -67,6 +67,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/test_print_signals/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/layercake/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_cake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_retainer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/*.go # gosub
@@ -112,8 +113,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_remover/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_subnet_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_graph/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_graph_driver/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_mapper/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_namespacer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_rootfs_provider/*.go # gosub
