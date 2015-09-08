@@ -35,6 +35,7 @@ mkdir $tmpdir/graph
   -allowHostAccess=false \
   -mtu=1500 \
   -containerGraceTime=5m \
+  -logLevel=error \
   -rootfs=/opt/warden/rootfs &
 
 sleep 5
