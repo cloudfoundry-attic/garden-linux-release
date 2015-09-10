@@ -588,4 +588,6 @@ builds:
     version: 0.303.0
   10ff549c-4770-44bd-82bf-935c82d4e7c0:
     version: 0.304.0
+  c5eceb89-2488-4050-97f8-639babb0593d:
+    version: 0.305.0
 format-version: '2'
