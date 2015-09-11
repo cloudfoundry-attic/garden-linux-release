@@ -106,7 +106,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_fetch_request_creator/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_lock/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_pinger/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_image_id_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_repository_fetcher/*.go # gosub
