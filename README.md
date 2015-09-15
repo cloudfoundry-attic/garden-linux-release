@@ -4,6 +4,14 @@ A [BOSH](http://docs.cloudfoundry.org/bosh/) release for deploying [Garden Linux
 
 To deploy Garden Linux to its own virtual machine follow the [Vagrant BOSH instructions](docs/vagrant-bosh.md). Alternatively, to deploy Garden Linux to a Garden container in a virtual machine follow the [BOSH lite instructions](docs/bosh-lite.md).
 
+Note that when deploying to BOSH lite, you **must** have the following properties settings in your manifest:
+
+```
+garden:
+  mount_btrfs_loopback: false
+  disk_quota_enabled: false
+```
+
 Either way, when you're done, Garden Linux should be running and you can create containers, run a process in a container, and so on via the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api).
 
 ## Developing
