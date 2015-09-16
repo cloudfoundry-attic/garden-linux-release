@@ -88,3 +88,12 @@ properties:
   garden.btrfs_store_size_mb:
     description: "Size in MB of the BTRFS backing store for graph storage (-1 to use all available space)"
     default: -1
+
+  garden.http_proxy:
+    description: Http proxy that Garden process should use 
+
+  garden.https_proxy:
+    description: Https proxy that Garden process should use
+
+  garden.no_proxy:
+    description: List of comma-separated hosts that should skip connecting to the proxy
