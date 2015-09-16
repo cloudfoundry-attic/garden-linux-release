@@ -58,6 +58,10 @@ properties:
     description: "path to the rootfs to use when a container specifies no rootfs"
     default: /var/vcap/packages/busybox
 
+  garden.network_pool:
+    description: "A CIDR subnet mask specifying the range of subnets available to be assigned to containers."
+    default: "10.254.0.0/22"
+
   garden.port_pool.start:
     description: "An integer port number used to denote where ports should start being allocated for Net In calls. Uses the Garden default if not set."
 
