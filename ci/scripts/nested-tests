@@ -36,6 +36,7 @@ mkdir $tmpdir/graph
   -mtu=1500 \
   -containerGraceTime=5m \
   -logLevel=error \
+  -persistentImageList="docker:///busybox,docker:///ubuntu,docker:///cloudfoundry/ubuntu-bc,docker:///cloudfoundry/garden-busybox" \
   -rootfs=/opt/warden/rootfs &
 
 sleep 5

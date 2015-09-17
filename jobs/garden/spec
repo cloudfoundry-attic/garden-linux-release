@@ -89,6 +89,9 @@ properties:
     description: "Size in MB of the BTRFS backing store for graph storage (-1 to use all available space)"
     default: -1
 
+  garden.persistent_image_list:
+    description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
+
   garden.http_proxy:
     description: Http proxy that Garden process should use 
 
