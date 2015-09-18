@@ -126,7 +126,7 @@ case $1 in
       truncate -s $(backing_store_size <%= p('garden.btrfs_store_size_mb')%> "/var/vcap/data" "df -k") $backing_store
 
       loopback_device=$(losetup -f --show $backing_store)
-      mkfs.btrfs --nodiscard $loopback_device
+      mkfs.btrfs --nodiscard $backing_store
     else
       echo "backing store already exists, skipping creation"
     fi
