@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+set -x
+
 RUN_DIR=/var/vcap/sys/run/garden
 LOG_DIR=/var/vcap/sys/log/garden
 PIDFILE=$RUN_DIR/garden.pid
@@ -20,8 +22,8 @@ DATA_DIR=/var/vcap/data/garden
 
 function setup() {
   mkdir -p /var/vcap/sys/log/monit
-  exec 1>> /var/vcap/sys/log/monit/garden.out.log
-  exec 2>> /var/vcap/sys/log/monit/garden.err.log
+  exec 1>> /var/vcap/sys/log/monit/garden.log
+  exec 2>> /var/vcap/sys/log/monit/garden.log
 }
 
 # copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
@@ -67,7 +69,7 @@ function backing_store_size() {
 
   if [[ 0 = $configured || ($available_size_k < $configured_store_size_k) ]]; then
     echo "$available_size_k"K
-  else     
+  else
     echo "$configured_store_size_k"K
   fi
 }
