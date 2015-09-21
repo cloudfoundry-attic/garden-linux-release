@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+set -x
+
 RUN_DIR=/var/vcap/sys/run/garden
 LOG_DIR=/var/vcap/sys/log/garden
 PIDFILE=$RUN_DIR/garden.pid
@@ -20,8 +22,8 @@ DATA_DIR=/var/vcap/data/garden
 
 function setup() {
   mkdir -p /var/vcap/sys/log/monit
-  exec 1>> /var/vcap/sys/log/monit/garden.out.log
-  exec 2>> /var/vcap/sys/log/monit/garden.err.log
+  exec 1>> /var/vcap/sys/log/monit/garden.log
+  exec 2>> /var/vcap/sys/log/monit/garden.log
 }
 
 # copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
@@ -42,14 +44,19 @@ function permit_device_control() {
     return
   fi
 
-  if [ ! -e /tmp/devices-cgroup ]; then
+  cgroup_dir=${RUN_DIR}/devices-cgroup
+
+  if [ ! -e ${cgroup_dir} ]; then
     # mount our container's devices subsystem somewhere
-    mkdir /tmp/devices-cgroup
-    mount -t cgroup -o $devices_subsytems none /tmp/devices-cgroup
+    mkdir ${cgroup_dir}
+  fi
+
+  if ! mountpoint -q ${cgroup_dir}; then
+    mount -t cgroup -o $devices_subsytems none ${cgroup_dir}
   fi
 
   # permit our cgroup to do everything with all devices
-  echo a > /tmp/devices-cgroup${devices_subdir}/devices.allow
+  echo a > ${cgroup_dir}${devices_subdir}/devices.allow
 }
 
 function backing_store_size() {
@@ -67,7 +74,7 @@ function backing_store_size() {
 
   if [[ 0 = $configured || ($available_size_k < $configured_store_size_k) ]]; then
     echo "$available_size_k"K
-  else     
+  else
     echo "$configured_store_size_k"K
   fi
 }
@@ -124,7 +131,7 @@ case $1 in
       truncate -s $(backing_store_size <%= p('garden.btrfs_store_size_mb')%> "/var/vcap/data" "df -k") $backing_store
 
       loopback_device=$(losetup -f --show $backing_store)
-      mkfs.btrfs --nodiscard $loopback_device
+      mkfs.btrfs --nodiscard $backing_store
     else
       echo "backing store already exists, skipping creation"
     fi
