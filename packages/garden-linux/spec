@@ -131,6 +131,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/system/test_user_execer/*.go # gosub
   - github.com/vito/gosub/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-integration-tests/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-integration-tests/performance/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/*.go # gosub
   - github.com/onsi/ginkgo/*.go # gosub
   - github.com/onsi/gomega/*.go # gosub
