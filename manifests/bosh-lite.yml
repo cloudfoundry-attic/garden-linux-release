@@ -19,11 +19,11 @@ jobs:
       - name: garden
     properties:
       garden:
-        disk_quota_enabled: false
         enable_graph_cleanup: true
         listen_network: tcp
         listen_address: 0.0.0.0:7777
-        mount_btrfs_loopback: false
+        mount_btrfs_loopback: ture
+        disk_quota_enabled: ture
 
 networks:
   - name: garden
