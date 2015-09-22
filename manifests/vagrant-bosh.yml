@@ -35,3 +35,4 @@ jobs:
       listen_network: tcp
       listen_address: 0.0.0.0:7777
       mount_btrfs_loopback: true
+      enable_graph_cleanup: true

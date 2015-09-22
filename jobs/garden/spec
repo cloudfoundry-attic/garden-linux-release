@@ -92,6 +92,10 @@ properties:
   garden.persistent_image_list:
     description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
 
+  garden.enable_graph_cleanup:
+    description: "Enable the graph garbage collection"
+    default: false
+    
   garden.http_proxy:
     description: Http proxy that Garden process should use 
 
