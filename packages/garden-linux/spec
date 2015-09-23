@@ -19,7 +19,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_poller/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_ptyopener/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_rlimits_env_encoder/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_rlimits_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_runner/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_signaller/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/container_daemon/fake_spawner/*.go # gosub
@@ -125,7 +124,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_translator/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysconfig/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/sysinfo/fake_system_info/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/sysinfo/fake_sysinfo/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_capabilities/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_user_execer/*.go # gosub
