@@ -68,6 +68,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_cake/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_id_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_retainer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/layercake/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/*.go # gosub
@@ -109,7 +110,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_registry_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_repository_fetcher/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_versioned_fetcher/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/*.go # gosub
@@ -122,6 +122,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_namespacer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_rootfs_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_translator/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysconfig/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/fake_sysinfo/*.go # gosub
@@ -229,7 +230,6 @@ files:
   - github.com/gorilla/context/*.go # gosub
   - github.com/gorilla/mux/*.go # gosub
   - github.com/nu7hatch/gouuid/*.go # gosub
-  - github.com/pivotal-golang/clock/*.go # gosub
   - github.com/pivotal-golang/lager/*.go # gosub
   - github.com/tchap/go-patricia/patricia/*.go # gosub
   - github.com/tedsuo/ifrit/*.go # gosub
