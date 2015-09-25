@@ -156,6 +156,8 @@ case $1 in
     mkdir -p $graph_path
     chmod go-rx $graph_path
 
+    ulimit -n 65536
+
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
       -snapshots="${snapshots_path}" \
