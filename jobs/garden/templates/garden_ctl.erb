@@ -151,12 +151,12 @@ case $1 in
     fi
     <% end %>
 
-    echo $$ > /var/vcap/sys/run/garden/garden.pid
-
     mkdir -p $graph_path
     chmod go-rx $graph_path
 
     ulimit -n 65536
+
+    echo $$ > $PIDFILE
 
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
