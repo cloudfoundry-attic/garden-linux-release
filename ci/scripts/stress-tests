@@ -1,0 +1,33 @@
+#!/bin/bash
+# vim: set ft=sh
+
+set -e -x
+
+cd $(dirname $0)/../..
+
+export GOPATH=$PWD
+export PATH=$PWD/bin:$PATH
+
+go install github.com/onsi/ginkgo/ginkgo
+
+cd src/github.com/cloudfoundry-incubator/garden-stress-tests
+export BTRFS_SUPPORTED=true
+export GARDEN_ADDRESS=127.0.0.1:7777
+
+while [ true ]; do
+  echo "Starting GINKGO"
+  monit -Iv start garden
+  go run stress.go
+  monit -Iv stop garden
+  
+  if [ $? -eq 0 ]; then
+    echo "Bake backing store"
+    cp /var/vcap/data/garden/garden_graph_backing_store garden_graph_backing_store.bak
+  else
+    cat /proc/mounts | grep '/var/vcap/data/garden/btrfs_graph' | grep 'ro'
+    if [ $? -eq 0 ]; then
+      echo "Yahoo the issue is reproduced!"
+      break
+    fi
+  fi
+done
