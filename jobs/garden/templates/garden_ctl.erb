@@ -72,7 +72,7 @@ function backing_store_size() {
   local df_output=$($3 $2)
   local available_size_k=$(echo "$df_output" | awk '{ print $4 }' | tail -n 1)
 
-  if [[ 0 = $configured || ($available_size_k < $configured_store_size_k) ]]; then
+  if [[ 0 = $configured || ($available_size_k -lt $configured_store_size_k) ]]; then
     echo "$available_size_k"K
   else
     echo "$configured_store_size_k"K
