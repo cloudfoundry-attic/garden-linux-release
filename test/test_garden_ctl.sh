@@ -8,12 +8,12 @@ source $test_script > /dev/null
 failed=0
 
 # If the configured size is less than the available size, use the configured size.
-result=$(backing_store_size "50" "df-stub.txt" "cat")
-if [ $result = "51200K" ]; then
+result=$(backing_store_size "6" "df-stub.txt" "cat")
+if [ $result = "6144K" ]; then
 	echo passed
 else
 	failed=1
-	echo  failed: $result !=  "51200K"
+	echo  failed: $result !=  "6144K"
 fi
 
 # If the configured size is -1, use the available size.
