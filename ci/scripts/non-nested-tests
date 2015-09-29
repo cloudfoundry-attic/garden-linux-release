@@ -13,5 +13,3 @@ go install github.com/onsi/ginkgo/ginkgo
 cd src/github.com/cloudfoundry-incubator/garden-integration-tests
 export BTRFS_SUPPORTED=true
 ginkgo -p -nodes=4
-
-ginkgo -nodes=1 performance
