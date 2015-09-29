@@ -104,3 +104,8 @@ properties:
 
   garden.no_proxy:
     description: List of comma-separated hosts that should skip connecting to the proxy
+
+  garden.log_level:
+    description: Level of logging for the Garden process
+    default: info
+
