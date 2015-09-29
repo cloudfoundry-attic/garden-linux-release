@@ -80,6 +80,7 @@ properties:
 
   garden.insecure_docker_registry_list:
     description: "An array of IP:PORT tuples and CIDR subnet masks. Pulling from docker registries with self signed certificates will not be permitted if the registry's address is not listed here."
+    default: []
 
   garden.mount_btrfs_loopback:
     description: "If true, garden should create a btrfs-formatted loopback device for graph storage"
@@ -91,6 +92,7 @@ properties:
 
   garden.persistent_image_list:
     description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
+    default: []
 
   garden.enable_graph_cleanup:
     description: "Enable the graph garbage collection"

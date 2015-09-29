@@ -37,7 +37,10 @@ mkdir $tmpdir/graph
   -containerGraceTime=5m \
   -logLevel=error \
   -enableGraphCleanup=true \
-  -persistentImageList="docker:///busybox,docker:///ubuntu,docker:///cloudfoundry/ubuntu-bc,docker:///cloudfoundry/garden-busybox" \
+  -persistentImage="docker:///busybox" \
+  -persistentImage="docker:///ubuntu" \
+  -persistentImage="docker:///cloudfoundry/ubuntu-bc" \
+  -persistentImage="docker:///cloudfoundry/garden-busybox" \
   -rootfs=/opt/warden/rootfs &
 
 sleep 5

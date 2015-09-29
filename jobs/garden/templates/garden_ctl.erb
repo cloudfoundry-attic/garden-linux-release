@@ -193,11 +193,11 @@ case $1 in
     <% if_p("garden.port_pool.size") do |size| %> \
       -portPoolSize=<%= size %> \
     <% end %> \
-    <% if_p("garden.insecure_docker_registry_list") do |list| %> \
-      -insecureDockerRegistryList=<%= list.join(',') %> \
+    <% p("garden.insecure_docker_registry_list").each do |url| %> \
+      -insecureDockerRegistry=<%= url %> \
     <% end %> \
-    <% if_p("garden.persistent_image_list") do |list| %> \
-      -persistentImageList=<%= list.join(',') %> \
+    <% p("garden.persistent_image_list").each do |url| %> \
+      -persistentImage=<%= url %> \
     <% end %> \
       1>>$LOG_DIR/garden.stdout.log \
       2>>$LOG_DIR/garden.stderr.log
