@@ -64,11 +64,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/link/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/link/fake_unix_server/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/test_print_signals/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/layercake/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_cake/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_id_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/layercake/fake_retainer/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/layercake/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/*.go # gosub
@@ -94,6 +89,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/network/subnets/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/subnets/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/packer/rootfs/empty/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/pkg/vars/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/port_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/port_pool/fake_port_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process/*.go # gosub
@@ -102,27 +98,32 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/process_tracker/fake_process_tracker/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process_tracker/fake_signaller/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/process_tracker/writer/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_container_id_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_fetch_request_creator/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_lock/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_pinger/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_registry_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fake_versioned_fetcher/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/repository_fetcher/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_filter_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_graph/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_remover/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_subnet_pool/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_mapper/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_namespacer/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_rootfs_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fake_translator/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/rootfs_provider/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fake_cake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fake_id_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fake_retainer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_container_id_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_fetch_request_creator/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_lock/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_pinger/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_registry_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_versioned_fetcher/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_mapper/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_namespacer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_rootfs_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_translator/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysconfig/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/fake_sysinfo/*.go # gosub
