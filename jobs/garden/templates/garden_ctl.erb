@@ -175,6 +175,9 @@ case $1 in
       -rootfs=<%= p("garden.default_container_rootfs") %> \
       -containerGraceTime=<%= p("garden.default_container_grace_time") %> \
       -enableGraphCleanup=<%= p("garden.enable_graph_cleanup") %> \
+    <% if_p("garden.log_level") do |log_level| %> \
+      -logLevel=<%= log_level %> \
+    <% end %> \
     <% if_p("garden.docker_registry_endpoint") do |endpoint| %> \
       -registry=<%= endpoint %> \
     <% end %> \

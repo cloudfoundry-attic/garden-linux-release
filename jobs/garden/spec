@@ -58,6 +58,13 @@ properties:
     description: "path to the rootfs to use when a container specifies no rootfs"
     default: /var/vcap/packages/busybox
 
+  garden.enable_graph_cleanup:
+    description: "Enable the graph garbage collection"
+    default: false
+ 
+  garden.log_level:
+    description: "Log level of the Garden server. Can be one of debug, info, error or fatal"
+
   garden.network_pool:
     description: "A CIDR subnet mask specifying the range of subnets available to be assigned to containers."
     default: "10.254.0.0/22"
@@ -93,11 +100,7 @@ properties:
   garden.persistent_image_list:
     description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
     default: []
-
-  garden.enable_graph_cleanup:
-    description: "Enable the graph garbage collection"
-    default: false
-    
+   
   garden.http_proxy:
     description: Http proxy that Garden process should use 
 

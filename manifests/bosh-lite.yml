@@ -24,6 +24,7 @@ jobs:
         listen_address: 0.0.0.0:7777
         mount_btrfs_loopback: ture
         disk_quota_enabled: ture
+        log_level: debug
 
 networks:
   - name: garden
