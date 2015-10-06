@@ -72,9 +72,12 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/cgroups_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/cgroups_manager/fake_cgroup_reader/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/cgroups_manager/fake_cgroups_manager/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/linux_container/fake_iptables_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/fake_network_statisticser/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/fake_quota_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/fake_watcher/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/linux_container/iptables_manager/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/linux_container/iptables_manager/fake_chain/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/quota_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/logging/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/*.go # gosub
@@ -255,6 +258,7 @@ files:
   - github.com/onsi/gomega/format/*.go # gosub
   - github.com/onsi/gomega/internal/assertion/*.go # gosub
   - github.com/onsi/gomega/internal/asyncassertion/*.go # gosub
+  - github.com/onsi/gomega/internal/oraclematcher/*.go # gosub
   - github.com/onsi/gomega/internal/testingtsupport/*.go # gosub
   - github.com/onsi/gomega/matchers/*.go # gosub
   - github.com/onsi/gomega/matchers/support/goraph/bipartitegraph/*.go # gosub
