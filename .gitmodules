@@ -100,3 +100,6 @@
 	path = src/github.com/blang/semver
 	url = https://github.com/blang/semver
 	branch = master
+[submodule "src/github.com/golang/protobuf"]
+	path = src/github.com/golang/protobuf
+	url = https://github.com/golang/protobuf
