@@ -1,6 +1,8 @@
 #!/bin/bash
 ROOT_DIR_PATH=$(cd $(dirname $0)/.. && pwd)
 
+temp_file=$(mktemp /tmp/gosub.XXXXXXXXXX)
+
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/cloudfoundry-incubator/garden-linux/... \
   -a github.com/cloudfoundry-incubator/garden-linux/container_daemon/initd/... \
@@ -11,12 +13,18 @@ go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/cloudfoundry-incubator/garden-linux/hook/hook/... \
   -a github.com/cloudfoundry-incubator/garden-linux/integration/helpers/capcheck/... \
   -a github.com/cloudfoundry-incubator/garden-linux/iodaemon/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/iodaemon/winsizereporter/... \
+  -a github.com/vito/gosub/... > $temp_file
+
+go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
+  -t github.com/cloudfoundry-incubator/garden-linux/shed/... \
   -t github.com/cloudfoundry-incubator/garden-linux/integration/... \
-  -t github.com/cloudfoundry-incubator/garden-integration-tests/... \
-  -a github.com/vito/gosub/...
+  -t github.com/cloudfoundry-incubator/garden-integration-tests/... >> $temp_file
 
 # Linux only packages
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/syndtr/... \
-  -a github.com/docker/docker/pkg/mount/...
+  -a github.com/docker/docker/pkg/mount/... >> $temp_file
+
+cat $temp_file | sort -u
+rm $temp_file
+
