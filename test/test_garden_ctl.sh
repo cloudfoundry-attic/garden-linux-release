@@ -1,5 +1,6 @@
 #!/bin/bash -e
 
+# Must be run in <repo>/test directory
 test_script=$(mktemp -t $0)
 erb -r ./test_helper.rb ../jobs/garden/templates/garden_ctl.erb > $test_script
 
