@@ -105,3 +105,7 @@
 	path = src/github.com/golang/protobuf
 	url = https://github.com/golang/protobuf
 	branch = master
+[submodule "src/github.com/cloudfoundry-incubator/garden-shed"]
+	path = src/github.com/cloudfoundry-incubator/garden-shed
+	url = https://github.com/cloudfoundry-incubator/garden-shed
+	branch = master

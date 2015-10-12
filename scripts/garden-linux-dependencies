@@ -16,7 +16,7 @@ go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/vito/gosub/... > $temp_file
 
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
-  -t github.com/cloudfoundry-incubator/garden-linux/shed/... \
+  -t github.com/cloudfoundry-incubator/garden-shed/... \
   -t github.com/cloudfoundry-incubator/garden-linux/integration/... \
   -t github.com/cloudfoundry-incubator/garden-integration-tests/... >> $temp_file
 

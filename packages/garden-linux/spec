@@ -114,33 +114,33 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_graph/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_remover/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_subnet_pool/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fake_cake/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fake_id_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fake_retainer/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/layercake/fakes/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_container_id_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_fetch_request_creator/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_lock/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_pinger/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_registry_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fake_versioned_fetcher/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/repository_fetcher/fakes/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_mapper/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_namespacer/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_rootfs_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fake_translator/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/shed/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysconfig/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/fake_sysinfo/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_capabilities/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_user_execer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_cake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_retainer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_container_id_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_fetch_request_creator/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_lock/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_pinger/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_registry_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_versioned_fetcher/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_mapper/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_namespacer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_rootfs_provider/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_translator/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/connection/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/routes/*.go # gosub
