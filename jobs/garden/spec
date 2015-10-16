@@ -28,6 +28,10 @@ properties:
     description: "Enforce disk quotas. Disable for nested Garden."
     default: true
 
+  garden.btrfs_force_sync:
+    description: "Force btrfs synchronization before gathering metrics."
+    default: true
+
   garden.deny_networks:
     description: "List of CIDR blocks to which containers will be denied access."
     default: []

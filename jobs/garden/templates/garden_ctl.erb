@@ -165,6 +165,7 @@ case $1 in
       -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin \
       -mtu=<%= p("garden.network_mtu") %> \
       -disableQuotas=<%= !p("garden.disk_quota_enabled") %> \
+      -btrfsForceSync=<%= p("garden.btrfs_force_sync") %> \
       -listenNetwork=<%= p("garden.listen_network") %> \
       -listenAddr=<%= p("garden.listen_address") %> \
       -denyNetworks=<%= p("garden.deny_networks").join(",") %> \
