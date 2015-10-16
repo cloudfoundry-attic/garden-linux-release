@@ -1,0 +1,71 @@
+---
+packages:
+- name: btrfs-progs
+  version: !binary |-
+    NzE4ODljNDM3YmUxMTM3Yjk4YWEwOTRhNTJlNjY0Y2ZlOGUzNmNkMw==
+  fingerprint: !binary |-
+    NzE4ODljNDM3YmUxMTM3Yjk4YWEwOTRhNTJlNjY0Y2ZlOGUzNmNkMw==
+  sha1: !binary |-
+    MDA1MzlhNzY0NzJmYTc0YmJkNjE2Zjg1YzExMGU5YjViNTc1MjQ1YQ==
+  dependencies: []
+- name: busybox
+  version: !binary |-
+    MTU5M2M0MWJlYjU3YzEyZDdmMmI4MmRmZjYxYjQ3ZDRkMTE5OTEzZA==
+  fingerprint: !binary |-
+    MTU5M2M0MWJlYjU3YzEyZDdmMmI4MmRmZjYxYjQ3ZDRkMTE5OTEzZA==
+  sha1: !binary |-
+    YzQ2YmVhOTU4NWRlY2M1NGU3MDUyZWZjMjdjMTM4ZDdiNjE4ZmZhZQ==
+  dependencies: []
+- name: garden-linux
+  version: !binary |-
+    YzA5YWQ1MTM0NjFjZThjZDJmNGRhMTlhZjk3NzE4ZmUyZjQ5ZGRiYQ==
+  fingerprint: !binary |-
+    YzA5YWQ1MTM0NjFjZThjZDJmNGRhMTlhZjk3NzE4ZmUyZjQ5ZGRiYQ==
+  sha1: !binary |-
+    NmU3NmNjYmU3MDZiNGE3NWJkZjk2YjRmOTZjZjhmMjY0Y2UzODJiZg==
+  dependencies:
+  - btrfs-progs
+  - golang_1.4
+- name: golang_1.4
+  version: !binary |-
+    NzE0Njk4YmMzNTJkMmExZGJlMzIxMzc2ZjA2NzYwMzc1NjgxNDdiYg==
+  fingerprint: !binary |-
+    NzE0Njk4YmMzNTJkMmExZGJlMzIxMzc2ZjA2NzYwMzc1NjgxNDdiYg==
+  sha1: !binary |-
+    Njg1Yjc0OWI0YmM3NTdiOWM1ZGFiNmNiZTg5MjZlNTdhMjI4M2E2OQ==
+  dependencies: []
+- name: iptables
+  version: !binary |-
+    NzIyNmQzMTFlOTBmNDliMDUyODdlNzlmMzM5NTgxYTFkZTllYTgyZQ==
+  fingerprint: !binary |-
+    NzIyNmQzMTFlOTBmNDliMDUyODdlNzlmMzM5NTgxYTFkZTllYTgyZQ==
+  sha1: !binary |-
+    OTgzNDVlNzJmZDk3OTg0YjhjMmExYTQ4NWI5OTg4ZjIwN2RjZTYwZA==
+  dependencies: []
+- name: shadow
+  version: !binary |-
+    ZmZkMTc0MWJkOWUwYTE3NmU2N2M2MWVmNzBjZDBlZDc2YjBlYzI4NQ==
+  fingerprint: !binary |-
+    ZmZkMTc0MWJkOWUwYTE3NmU2N2M2MWVmNzBjZDBlZDc2YjBlYzI4NQ==
+  sha1: !binary |-
+    ZTVlYjM4YmZhOGYzYzgxODA4NmJkNDE2ZmRlYzE0ZjlmYjBiNzEzMQ==
+  dependencies: []
+jobs:
+- name: garden
+  version: !binary |-
+    MDc0YzY4MTk1ZDM5ODYxNDUyYmJjNTViOGQxY2UzMzE1ZTg0MTRjZg==
+  fingerprint: !binary |-
+    MDc0YzY4MTk1ZDM5ODYxNDUyYmJjNTViOGQxY2UzMzE1ZTg0MTRjZg==
+  sha1: !binary |-
+    NzI3YTM5NDA4YTk5NDg0NjU2MmI1ZmNlMzIwMWE2YmU1YzJiM2RlMg==
+license:
+  version: !binary |-
+    NWQ4ZWU4MWRjOWU2MTJjMGVlZmNmMzllOWVmYWU2NmQyZmFkMmE5OQ==
+  fingerprint: !binary |-
+    NWQ4ZWU4MWRjOWU2MTJjMGVlZmNmMzllOWVmYWU2NmQyZmFkMmE5OQ==
+  sha1: !binary |-
+    NjYwNDFmYjdkYTRlZTBhYWI1OWFlOWY0YjRlN2ZiMDdkYjdmNjE4OQ==
+commit_hash: 57446f5b
+uncommitted_changes: false
+name: garden-linux
+version: 0.316.0
