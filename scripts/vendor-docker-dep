@@ -1,0 +1,13 @@
+#!/bin/sh
+
+COMMIT=${1:-origin/master}
+
+echo "Vendoring docker $COMMIT"
+
+rm -rf src/github.com/docker/docker
+git clone https://github.com/docker/docker src/github.com/docker/docker
+pushd src/github.com/docker/docker
+git checkout $COMMIT
+sh ./hack/make/.go-autogen
+rm -rf .git
+popd

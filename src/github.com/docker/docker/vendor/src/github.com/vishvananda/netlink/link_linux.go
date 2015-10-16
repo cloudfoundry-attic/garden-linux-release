@@ -13,6 +13,15 @@ import (
 var native = nl.NativeEndian()
 var lookupByDump = false
 
+var macvlanModes = [...]uint32{
+	0,
+	nl.MACVLAN_MODE_PRIVATE,
+	nl.MACVLAN_MODE_VEPA,
+	nl.MACVLAN_MODE_BRIDGE,
+	nl.MACVLAN_MODE_PASSTHRU,
+	nl.MACVLAN_MODE_SOURCE,
+}
+
 func ensureIndex(link *LinkAttrs) {
 	if link != nil && link.Index == 0 {
 		newlink, _ := LinkByName(link.Name)
@@ -39,7 +48,7 @@ func LinkSetUp(link Link) error {
 	return err
 }
 
-// LinkSetUp disables link device.
+// LinkSetDown disables link device.
 // Equivalent to: `ip link set $link down`
 func LinkSetDown(link Link) error {
 	base := link.Attrs()
@@ -64,10 +73,7 @@ func LinkSetMTU(link Link, mtu int) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_UNSPEC)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	b := make([]byte, 4)
@@ -88,10 +94,7 @@ func LinkSetName(link Link, name string) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_UNSPEC)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	data := nl.NewRtAttr(syscall.IFLA_IFNAME, []byte(name))
@@ -109,10 +112,7 @@ func LinkSetHardwareAddr(link Link, hwaddr net.HardwareAddr) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_UNSPEC)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	data := nl.NewRtAttr(syscall.IFLA_ADDRESS, []byte(hwaddr))
@@ -142,10 +142,7 @@ func LinkSetMasterByIndex(link Link, masterIndex int) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_UNSPEC)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	b := make([]byte, 4)
@@ -167,10 +164,7 @@ func LinkSetNsPid(link Link, nspid int) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_UNSPEC)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	b := make([]byte, 4)
@@ -183,7 +177,7 @@ func LinkSetNsPid(link Link, nspid int) error {
 	return err
 }
 
-// LinkSetNsPid puts the device into a new network namespace. The
+// LinkSetNsFd puts the device into a new network namespace. The
 // fd must be an open file descriptor to a network namespace.
 // Similar to: `ip link set $link netns $ns`
 func LinkSetNsFd(link Link, fd int) error {
@@ -192,10 +186,7 @@ func LinkSetNsFd(link Link, fd int) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_UNSPEC)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	b := make([]byte, 4)
@@ -257,6 +248,10 @@ func addVxlanAttrs(vxlan *Vxlan, linkInfo *nl.RtAttr) {
 	nl.NewRtAttrChild(data, nl.IFLA_VXLAN_L2MISS, boolAttr(vxlan.L2miss))
 	nl.NewRtAttrChild(data, nl.IFLA_VXLAN_L3MISS, boolAttr(vxlan.L3miss))
 
+	if vxlan.GBP {
+		nl.NewRtAttrChild(data, nl.IFLA_VXLAN_GBP, boolAttr(vxlan.GBP))
+	}
+
 	if vxlan.NoAge {
 		nl.NewRtAttrChild(data, nl.IFLA_VXLAN_AGEING, nl.Uint32Attr(0))
 	} else if vxlan.Age > 0 {
@@ -312,10 +307,27 @@ func LinkAdd(link Link) error {
 		req.AddData(mtu)
 	}
 
+	if base.TxQLen >= 0 {
+		qlen := nl.NewRtAttr(syscall.IFLA_TXQLEN, nl.Uint32Attr(uint32(base.TxQLen)))
+		req.AddData(qlen)
+	}
+
+	if base.Namespace != nil {
+		var attr *nl.RtAttr
+		switch base.Namespace.(type) {
+		case NsPid:
+			val := nl.Uint32Attr(uint32(base.Namespace.(NsPid)))
+			attr = nl.NewRtAttr(syscall.IFLA_NET_NS_PID, val)
+		case NsFd:
+			val := nl.Uint32Attr(uint32(base.Namespace.(NsFd)))
+			attr = nl.NewRtAttr(nl.IFLA_NET_NS_FD, val)
+		}
+
+		req.AddData(attr)
+	}
+
 	linkInfo := nl.NewRtAttr(syscall.IFLA_LINKINFO, nil)
 	nl.NewRtAttrChild(linkInfo, nl.IFLA_INFO_KIND, nl.NonZeroTerminated(link.Type()))
-
-	nl.NewRtAttrChild(linkInfo, syscall.IFLA_TXQLEN, nl.Uint32Attr(base.TxQLen))
 
 	if vlan, ok := link.(*Vlan); ok {
 		b := make([]byte, 2)
@@ -327,15 +339,23 @@ func LinkAdd(link Link) error {
 		peer := nl.NewRtAttrChild(data, nl.VETH_INFO_PEER, nil)
 		nl.NewIfInfomsgChild(peer, syscall.AF_UNSPEC)
 		nl.NewRtAttrChild(peer, syscall.IFLA_IFNAME, nl.ZeroTerminated(veth.PeerName))
-		nl.NewRtAttrChild(peer, syscall.IFLA_TXQLEN, nl.Uint32Attr(base.TxQLen))
+		if base.TxQLen >= 0 {
+			nl.NewRtAttrChild(peer, syscall.IFLA_TXQLEN, nl.Uint32Attr(uint32(base.TxQLen)))
+		}
 		if base.MTU > 0 {
 			nl.NewRtAttrChild(peer, syscall.IFLA_MTU, nl.Uint32Attr(uint32(base.MTU)))
 		}
+
 	} else if vxlan, ok := link.(*Vxlan); ok {
 		addVxlanAttrs(vxlan, linkInfo)
 	} else if ipv, ok := link.(*IPVlan); ok {
 		data := nl.NewRtAttrChild(linkInfo, nl.IFLA_INFO_DATA, nil)
 		nl.NewRtAttrChild(data, nl.IFLA_IPVLAN_MODE, nl.Uint16Attr(uint16(ipv.Mode)))
+	} else if macv, ok := link.(*Macvlan); ok {
+		if macv.Mode != MACVLAN_MODE_DEFAULT {
+			data := nl.NewRtAttrChild(linkInfo, nl.IFLA_INFO_DATA, nil)
+			nl.NewRtAttrChild(data, nl.IFLA_MACVLAN_MODE, nl.Uint32Attr(macvlanModes[macv.Mode]))
+		}
 	}
 
 	req.AddData(linkInfo)
@@ -483,6 +503,8 @@ func linkDeserialize(m []byte) (Link, error) {
 						link = &Vxlan{}
 					case "ipvlan":
 						link = &IPVlan{}
+					case "macvlan":
+						link = &Macvlan{}
 					default:
 						link = &Generic{LinkType: linkType}
 					}
@@ -498,6 +520,8 @@ func linkDeserialize(m []byte) (Link, error) {
 						parseVxlanData(link, data)
 					case "ipvlan":
 						parseIPVlanData(link, data)
+					case "macvlan":
+						parseMacvlanData(link, data)
 					}
 				}
 			}
@@ -520,7 +544,7 @@ func linkDeserialize(m []byte) (Link, error) {
 		case syscall.IFLA_MASTER:
 			base.MasterIndex = int(native.Uint32(attr.Value[0:4]))
 		case syscall.IFLA_TXQLEN:
-			base.TxQLen = native.Uint32(attr.Value[0:4])
+			base.TxQLen = int(native.Uint32(attr.Value[0:4]))
 		}
 	}
 	// Links that don't have IFLA_INFO_KIND are hardware devices
@@ -547,8 +571,7 @@ func LinkList() ([]Link, error) {
 		return nil, err
 	}
 
-	res := make([]Link, 0)
-
+	var res []Link
 	for _, m := range msgs {
 		link, err := linkDeserialize(m)
 		if err != nil {
@@ -590,10 +613,7 @@ func setProtinfoAttr(link Link, mode bool, attr int) error {
 	req := nl.NewNetlinkRequest(syscall.RTM_SETLINK, syscall.NLM_F_ACK)
 
 	msg := nl.NewIfInfomsg(syscall.AF_BRIDGE)
-	msg.Type = syscall.RTM_SETLINK
-	msg.Flags = syscall.NLM_F_REQUEST
 	msg.Index = int32(base.Index)
-	msg.Change = nl.DEFAULT_CHANGE
 	req.AddData(msg)
 
 	br := nl.NewRtAttr(syscall.IFLA_PROTINFO|syscall.NLA_F_NESTED, nil)
@@ -646,6 +666,8 @@ func parseVxlanData(link Link, data []syscall.NetlinkRouteAttr) {
 			vxlan.L2miss = int8(datum.Value[0]) != 0
 		case nl.IFLA_VXLAN_L3MISS:
 			vxlan.L3miss = int8(datum.Value[0]) != 0
+		case nl.IFLA_VXLAN_GBP:
+			vxlan.GBP = int8(datum.Value[0]) != 0
 		case nl.IFLA_VXLAN_AGEING:
 			vxlan.Age = int(native.Uint32(datum.Value[0:4]))
 			vxlan.NoAge = vxlan.Age == 0
@@ -669,6 +691,27 @@ func parseIPVlanData(link Link, data []syscall.NetlinkRouteAttr) {
 	for _, datum := range data {
 		if datum.Attr.Type == nl.IFLA_IPVLAN_MODE {
 			ipv.Mode = IPVlanMode(native.Uint32(datum.Value[0:4]))
+			return
+		}
+	}
+}
+
+func parseMacvlanData(link Link, data []syscall.NetlinkRouteAttr) {
+	macv := link.(*Macvlan)
+	for _, datum := range data {
+		if datum.Attr.Type == nl.IFLA_MACVLAN_MODE {
+			switch native.Uint32(datum.Value[0:4]) {
+			case nl.MACVLAN_MODE_PRIVATE:
+				macv.Mode = MACVLAN_MODE_PRIVATE
+			case nl.MACVLAN_MODE_VEPA:
+				macv.Mode = MACVLAN_MODE_VEPA
+			case nl.MACVLAN_MODE_BRIDGE:
+				macv.Mode = MACVLAN_MODE_BRIDGE
+			case nl.MACVLAN_MODE_PASSTHRU:
+				macv.Mode = MACVLAN_MODE_PASSTHRU
+			case nl.MACVLAN_MODE_SOURCE:
+				macv.Mode = MACVLAN_MODE_SOURCE
+			}
 			return
 		}
 	}

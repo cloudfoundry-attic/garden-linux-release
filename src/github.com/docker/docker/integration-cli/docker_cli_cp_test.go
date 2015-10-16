@@ -23,6 +23,18 @@ const (
 	cpHostContents      = "hello, i am the host"
 )
 
+// Ensure that an all-local path case returns an error.
+func (s *DockerSuite) TestCpLocalOnly(c *check.C) {
+	err := runDockerCp(c, "foo", "bar")
+	if err == nil {
+		c.Fatal("expected failure, got success")
+	}
+
+	if !strings.Contains(err.Error(), "must specify at least one container source") {
+		c.Fatalf("unexpected output: %s", err.Error())
+	}
+}
+
 // Test for #5656
 // Check that garbage paths don't escape the container's rootfs
 func (s *DockerSuite) TestCpGarbagePath(c *check.C) {
@@ -61,7 +73,7 @@ func (s *DockerSuite) TestCpGarbagePath(c *check.C) {
 
 	path := path.Join("../../../../../../../../../../../../", cpFullPath)
 
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
+	dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
 
 	file, _ := os.Open(tmpname)
 	defer file.Close()
@@ -126,7 +138,7 @@ func (s *DockerSuite) TestCpRelativePath(c *check.C) {
 		c.Fatalf("path %s was assumed to be an absolute path", cpFullPath)
 	}
 
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":"+relPath, tmpdir)
+	dockerCmd(c, "cp", cleanedContainerID+":"+relPath, tmpdir)
 
 	file, _ := os.Open(tmpname)
 	defer file.Close()
@@ -184,7 +196,7 @@ func (s *DockerSuite) TestCpAbsolutePath(c *check.C) {
 
 	path := cpFullPath
 
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
+	dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
 
 	file, _ := os.Open(tmpname)
 	defer file.Close()
@@ -238,29 +250,185 @@ func (s *DockerSuite) TestCpAbsoluteSymlink(c *check.C) {
 		c.Fatal(err)
 	}
 
-	tmpname := filepath.Join(tmpdir, cpTestName)
+	tmpname := filepath.Join(tmpdir, "container_path")
 	defer os.RemoveAll(tmpdir)
 
 	path := path.Join("/", "container_path")
 
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
+	dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
 
-	file, _ := os.Open(tmpname)
-	defer file.Close()
-
-	test, err := ioutil.ReadAll(file)
+	// We should have copied a symlink *NOT* the file itself!
+	linkTarget, err := os.Readlink(tmpname)
 	if err != nil {
 		c.Fatal(err)
 	}
 
-	if string(test) == cpHostContents {
-		c.Errorf("output matched host file -- absolute symlink can escape container rootfs")
+	if linkTarget != filepath.FromSlash(cpFullPath) {
+		c.Errorf("symlink target was %q, but expected: %q", linkTarget, cpFullPath)
+	}
+}
+
+// Check that symlinks to a directory behave as expected when copying one from
+// a container.
+func (s *DockerSuite) TestCpFromSymlinkToDirectory(c *check.C) {
+	out, exitCode := dockerCmd(c, "run", "-d", "busybox", "/bin/sh", "-c", "mkdir -p '"+cpTestPath+"' && echo -n '"+cpContainerContents+"' > "+cpFullPath+" && ln -s "+cpTestPathParent+" /dir_link")
+	if exitCode != 0 {
+		c.Fatal("failed to create a container", out)
 	}
 
-	if string(test) != cpContainerContents {
-		c.Errorf("output doesn't match the input for absolute symlink")
+	cleanedContainerID := strings.TrimSpace(out)
+
+	out, _ = dockerCmd(c, "wait", cleanedContainerID)
+	if strings.TrimSpace(out) != "0" {
+		c.Fatal("failed to set up container", out)
 	}
 
+	testDir, err := ioutil.TempDir("", "test-cp-from-symlink-to-dir-")
+	if err != nil {
+		c.Fatal(err)
+	}
+	defer os.RemoveAll(testDir)
+
+	// This copy command should copy the symlink, not the target, into the
+	// temporary directory.
+	dockerCmd(c, "cp", cleanedContainerID+":"+"/dir_link", testDir)
+
+	expectedPath := filepath.Join(testDir, "dir_link")
+	linkTarget, err := os.Readlink(expectedPath)
+	if err != nil {
+		c.Fatalf("unable to read symlink at %q: %v", expectedPath, err)
+	}
+
+	if linkTarget != filepath.FromSlash(cpTestPathParent) {
+		c.Errorf("symlink target was %q, but expected: %q", linkTarget, cpTestPathParent)
+	}
+
+	os.Remove(expectedPath)
+
+	// This copy command should resolve the symlink (note the trailing
+	// seperator), copying the target into the temporary directory.
+	dockerCmd(c, "cp", cleanedContainerID+":"+"/dir_link/", testDir)
+
+	// It *should not* have copied the directory using the target's name, but
+	// used the given name instead.
+	unexpectedPath := filepath.Join(testDir, cpTestPathParent)
+	if stat, err := os.Lstat(unexpectedPath); err == nil {
+		c.Fatalf("target name was copied: %q - %q", stat.Mode(), stat.Name())
+	}
+
+	// It *should* have copied the directory using the asked name "dir_link".
+	stat, err := os.Lstat(expectedPath)
+	if err != nil {
+		c.Fatalf("unable to stat resource at %q: %v", expectedPath, err)
+	}
+
+	if !stat.IsDir() {
+		c.Errorf("should have copied a directory but got %q instead", stat.Mode())
+	}
+}
+
+// Check that symlinks to a directory behave as expected when copying one to a
+// container.
+func (s *DockerSuite) TestCpToSymlinkToDirectory(c *check.C) {
+	testRequires(c, SameHostDaemon) // Requires local volume mount bind.
+
+	testVol, err := ioutil.TempDir("", "test-cp-to-symlink-to-dir-")
+	if err != nil {
+		c.Fatal(err)
+	}
+	defer os.RemoveAll(testVol)
+
+	// Create a test container with a local volume. We will test by copying
+	// to the volume path in the container which we can then verify locally.
+	out, exitCode := dockerCmd(c, "create", "-v", testVol+":/testVol", "busybox")
+	if exitCode != 0 {
+		c.Fatal("failed to create a container", out)
+	}
+
+	cleanedContainerID := strings.TrimSpace(out)
+
+	// Create a temp directory to hold a test file nested in a direcotry.
+	testDir, err := ioutil.TempDir("", "test-cp-to-symlink-to-dir-")
+	if err != nil {
+		c.Fatal(err)
+	}
+	defer os.RemoveAll(testDir)
+
+	// This file will be at "/testDir/some/path/test" and will be copied into
+	// the test volume later.
+	hostTestFilename := filepath.Join(testDir, cpFullPath)
+	if err := os.MkdirAll(filepath.Dir(hostTestFilename), os.FileMode(0700)); err != nil {
+		c.Fatal(err)
+	}
+	if err := ioutil.WriteFile(hostTestFilename, []byte(cpHostContents), os.FileMode(0600)); err != nil {
+		c.Fatal(err)
+	}
+
+	// Now create another temp directory to hold a symlink to the
+	// "/testDir/some" directory.
+	linkDir, err := ioutil.TempDir("", "test-cp-to-symlink-to-dir-")
+	if err != nil {
+		c.Fatal(err)
+	}
+	defer os.RemoveAll(linkDir)
+
+	// Then symlink "/linkDir/dir_link" to "/testdir/some".
+	linkTarget := filepath.Join(testDir, cpTestPathParent)
+	localLink := filepath.Join(linkDir, "dir_link")
+	if err := os.Symlink(linkTarget, localLink); err != nil {
+		c.Fatal(err)
+	}
+
+	// Now copy that symlink into the test volume in the container.
+	dockerCmd(c, "cp", localLink, cleanedContainerID+":/testVol")
+
+	// This copy command should have copied the symlink *not* the target.
+	expectedPath := filepath.Join(testVol, "dir_link")
+	actualLinkTarget, err := os.Readlink(expectedPath)
+	if err != nil {
+		c.Fatalf("unable to read symlink at %q: %v", expectedPath, err)
+	}
+
+	if actualLinkTarget != linkTarget {
+		c.Errorf("symlink target was %q, but expected: %q", actualLinkTarget, linkTarget)
+	}
+
+	// Good, now remove that copied link for the next test.
+	os.Remove(expectedPath)
+
+	// This copy command should resolve the symlink (note the trailing
+	// seperator), copying the target into the test volume directory in the
+	// container.
+	dockerCmd(c, "cp", localLink+"/", cleanedContainerID+":/testVol")
+
+	// It *should not* have copied the directory using the target's name, but
+	// used the given name instead.
+	unexpectedPath := filepath.Join(testVol, cpTestPathParent)
+	if stat, err := os.Lstat(unexpectedPath); err == nil {
+		c.Fatalf("target name was copied: %q - %q", stat.Mode(), stat.Name())
+	}
+
+	// It *should* have copied the directory using the asked name "dir_link".
+	stat, err := os.Lstat(expectedPath)
+	if err != nil {
+		c.Fatalf("unable to stat resource at %q: %v", expectedPath, err)
+	}
+
+	if !stat.IsDir() {
+		c.Errorf("should have copied a directory but got %q instead", stat.Mode())
+	}
+
+	// And this directory should contain the file copied from the host at the
+	// expected location: "/testVol/dir_link/path/test"
+	expectedFilepath := filepath.Join(testVol, "dir_link/path/test")
+	fileContents, err := ioutil.ReadFile(expectedFilepath)
+	if err != nil {
+		c.Fatal(err)
+	}
+
+	if string(fileContents) != cpHostContents {
+		c.Fatalf("file contains %q but expected %q", string(fileContents), cpHostContents)
+	}
 }
 
 // Test for #5619
@@ -302,7 +470,7 @@ func (s *DockerSuite) TestCpSymlinkComponent(c *check.C) {
 
 	path := path.Join("/", "container_path", cpTestName)
 
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
+	dockerCmd(c, "cp", cleanedContainerID+":"+path, tmpdir)
 
 	file, _ := os.Open(tmpname)
 	defer file.Close()
@@ -380,7 +548,7 @@ func (s *DockerSuite) TestCpSpecialFiles(c *check.C) {
 	}
 
 	// Copy actual /etc/resolv.conf
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/etc/resolv.conf", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/etc/resolv.conf", outDir)
 
 	expected, err := ioutil.ReadFile("/var/lib/docker/containers/" + cleanedContainerID + "/resolv.conf")
 	actual, err := ioutil.ReadFile(outDir + "/resolv.conf")
@@ -390,7 +558,7 @@ func (s *DockerSuite) TestCpSpecialFiles(c *check.C) {
 	}
 
 	// Copy actual /etc/hosts
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/etc/hosts", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/etc/hosts", outDir)
 
 	expected, err = ioutil.ReadFile("/var/lib/docker/containers/" + cleanedContainerID + "/hosts")
 	actual, err = ioutil.ReadFile(outDir + "/hosts")
@@ -400,7 +568,7 @@ func (s *DockerSuite) TestCpSpecialFiles(c *check.C) {
 	}
 
 	// Copy actual /etc/resolv.conf
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/etc/hostname", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/etc/hostname", outDir)
 
 	expected, err = ioutil.ReadFile("/var/lib/docker/containers/" + cleanedContainerID + "/hostname")
 	actual, err = ioutil.ReadFile(outDir + "/hostname")
@@ -442,7 +610,7 @@ func (s *DockerSuite) TestCpVolumePath(c *check.C) {
 	}
 
 	// Copy actual volume path
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/foo", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/foo", outDir)
 
 	stat, err := os.Stat(outDir + "/foo")
 	if err != nil {
@@ -460,7 +628,7 @@ func (s *DockerSuite) TestCpVolumePath(c *check.C) {
 	}
 
 	// Copy file nested in volume
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/foo/bar", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/foo/bar", outDir)
 
 	stat, err = os.Stat(outDir + "/bar")
 	if err != nil {
@@ -471,7 +639,7 @@ func (s *DockerSuite) TestCpVolumePath(c *check.C) {
 	}
 
 	// Copy Bind-mounted dir
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/baz", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/baz", outDir)
 	stat, err = os.Stat(outDir + "/baz")
 	if err != nil {
 		c.Fatal(err)
@@ -481,7 +649,7 @@ func (s *DockerSuite) TestCpVolumePath(c *check.C) {
 	}
 
 	// Copy file nested in bind-mounted dir
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/baz/test", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/baz/test", outDir)
 	fb, err := ioutil.ReadFile(outDir + "/baz/test")
 	if err != nil {
 		c.Fatal(err)
@@ -495,7 +663,7 @@ func (s *DockerSuite) TestCpVolumePath(c *check.C) {
 	}
 
 	// Copy bind-mounted file
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/test", outDir)
+	dockerCmd(c, "cp", cleanedContainerID+":/test", outDir)
 	fb, err = ioutil.ReadFile(outDir + "/test")
 	if err != nil {
 		c.Fatal(err)
@@ -536,7 +704,7 @@ func (s *DockerSuite) TestCpToDot(c *check.C) {
 	if err := os.Chdir(tmpdir); err != nil {
 		c.Fatal(err)
 	}
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/test", ".")
+	dockerCmd(c, "cp", cleanedContainerID+":/test", ".")
 	content, err := ioutil.ReadFile("./test")
 	if string(content) != "lololol\n" {
 		c.Fatalf("Wrong content in copied file %q, should be %q", content, "lololol\n")
@@ -589,7 +757,7 @@ func (s *DockerSuite) TestCpNameHasColon(c *check.C) {
 		c.Fatal(err)
 	}
 	defer os.RemoveAll(tmpdir)
-	_, _ = dockerCmd(c, "cp", cleanedContainerID+":/te:s:t", tmpdir)
+	dockerCmd(c, "cp", cleanedContainerID+":/te:s:t", tmpdir)
 	content, err := ioutil.ReadFile(tmpdir + "/te:s:t")
 	if string(content) != "lololol\n" {
 		c.Fatalf("Wrong content in copied file %q, should be %q", content, "lololol\n")
@@ -598,17 +766,12 @@ func (s *DockerSuite) TestCpNameHasColon(c *check.C) {
 
 func (s *DockerSuite) TestCopyAndRestart(c *check.C) {
 	expectedMsg := "hello"
-	out, err := exec.Command(dockerBinary, "run", "-d", "busybox", "echo", expectedMsg).CombinedOutput()
-	if err != nil {
-		c.Fatal(string(out), err)
-	}
+	out, _ := dockerCmd(c, "run", "-d", "busybox", "echo", expectedMsg)
 	id := strings.TrimSpace(string(out))
 
-	if out, err = exec.Command(dockerBinary, "wait", id).CombinedOutput(); err != nil {
-		c.Fatalf("unable to wait for container: %s", err)
-	}
+	out, _ = dockerCmd(c, "wait", id)
 
-	status := strings.TrimSpace(string(out))
+	status := strings.TrimSpace(out)
 	if status != "0" {
 		c.Fatalf("container exited with status %s", status)
 	}
@@ -619,16 +782,23 @@ func (s *DockerSuite) TestCopyAndRestart(c *check.C) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if _, err = exec.Command(dockerBinary, "cp", fmt.Sprintf("%s:/etc/issue", id), tmpDir).CombinedOutput(); err != nil {
-		c.Fatalf("unable to copy from busybox container: %s", err)
-	}
+	dockerCmd(c, "cp", fmt.Sprintf("%s:/etc/issue", id), tmpDir)
 
-	if out, err = exec.Command(dockerBinary, "start", "-a", id).CombinedOutput(); err != nil {
-		c.Fatalf("unable to start busybox container after copy: %s - %s", err, out)
-	}
+	out, _ = dockerCmd(c, "start", "-a", id)
 
-	msg := strings.TrimSpace(string(out))
+	msg := strings.TrimSpace(out)
 	if msg != expectedMsg {
 		c.Fatalf("expected %q but got %q", expectedMsg, msg)
 	}
+}
+
+func (s *DockerSuite) TestCopyCreatedContainer(c *check.C) {
+	dockerCmd(c, "create", "--name", "test_cp", "-v", "/test", "busybox")
+
+	tmpDir, err := ioutil.TempDir("", "test")
+	if err != nil {
+		c.Fatalf("unable to make temporary directory: %s", err)
+	}
+	defer os.RemoveAll(tmpDir)
+	dockerCmd(c, "cp", "test_cp:/bin/sh", tmpDir)
 }
