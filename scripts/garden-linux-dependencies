@@ -23,6 +23,7 @@ go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
 # Linux only packages
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
   -a github.com/syndtr/... \
+	-a github.com/docker/libcontainer/label \
   -a github.com/docker/docker/pkg/mount/... >> $temp_file
 
 cat $temp_file | sort -u

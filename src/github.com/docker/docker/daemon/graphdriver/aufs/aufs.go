@@ -22,6 +22,7 @@ package aufs
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -253,6 +254,39 @@ func (a *Driver) Remove(id string) error {
 	return nil
 }
 
+func (a *Driver) GetQuotaed(id, mountLabel string) (string, error) {
+	ids, err := getParentIds(a.rootPath(), id)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		ids = []string{}
+	}
+
+	// Protect the a.active from concurrent access
+	a.Lock()
+	defer a.Unlock()
+
+	count := a.active[id]
+
+	// If a dir does not have a parent ( no layers )do not try to mount
+	// just return the diff path to the data
+	out := path.Join(a.rootPath(), "diff", id)
+	if len(ids) > 0 {
+		out = path.Join(a.rootPath(), "mnt", id)
+
+		if count == 0 {
+			if err := a.mountQuotaed(id, mountLabel); err != nil {
+				return "", fmt.Errorf("mount quotaed: %s", err)
+			}
+		}
+	}
+
+	a.active[id] = count + 1
+
+	return out, nil
+}
+
 // Return the rootfs path for the id
 // This will mount the dir at it's given path
 func (a *Driver) Get(id, mountLabel string) (string, error) {
@@ -381,6 +415,55 @@ func (a *Driver) mount(id, mountLabel string) error {
 	if err != nil {
 		return err
 	}
+
+	if err := a.aufsMount(layers, rw, target, mountLabel); err != nil {
+		return fmt.Errorf("error creating aufs mount to %s: %v", target, err)
+	}
+	return nil
+}
+
+func (a *Driver) mountQuotaed(id, mountLabel string) error {
+	// If the id is mounted or we get an error return
+	if mounted, err := a.mounted(id); err != nil || mounted {
+		return fmt.Errorf("mounted?: %s", err)
+	}
+
+	var (
+		target = path.Join(a.rootPath(), "mnt", id)
+		rw     = path.Join(a.rootPath(), "diff", id)
+	)
+
+	layers, err := a.getParentLayerPaths(id)
+	if err != nil {
+		return fmt.Errorf("get parent layer path: %s", err)
+	}
+
+	// START HACKERY!
+	backingStore, err := ioutil.TempFile("", "")
+	if err != nil {
+		return err
+	}
+
+	if trunc, err := exec.Command("truncate", "-s", "2G", backingStore.Name()).CombinedOutput(); err != nil {
+		return errors.New("truncate: " + string(trunc))
+	}
+
+	device, err := exec.Command("losetup", "--show", "-f", backingStore.Name()).CombinedOutput()
+	if err != nil {
+		return errors.New("losetup: " + string(device))
+	}
+
+	dev := strings.TrimSuffix(string(device), "\n")
+
+	mkfs, err := exec.Command("mkfs.ext4", dev).CombinedOutput()
+	if err != nil {
+		return errors.New("mkfs.ext4: " + string(mkfs))
+	}
+
+	if mnt, err := exec.Command("mount", dev, rw).CombinedOutput(); err != nil {
+		return errors.New("mount " + dev + " " + rw + ":" + string(mnt))
+	}
+	// END HACKERY
 
 	if err := a.aufsMount(layers, rw, target, mountLabel); err != nil {
 		return fmt.Errorf("error creating aufs mount to %s: %v", target, err)
