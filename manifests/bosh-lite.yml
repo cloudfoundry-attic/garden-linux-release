@@ -25,6 +25,7 @@ jobs:
         mount_btrfs_loopback: true
         disk_quota_enabled: true
         btrfs_force_sync: true
+        btrfs_commit_interval: 30
         log_level: debug
 
 networks:

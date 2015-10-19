@@ -32,6 +32,10 @@ properties:
     description: "Force btrfs synchronization before gathering metrics."
     default: true
 
+  garden.btrfs_commit_interval:
+    description: "The interval of btrfs periodic commit in seconds."
+    default: 30
+
   garden.deny_networks:
     description: "List of CIDR blocks to which containers will be denied access."
     default: []
