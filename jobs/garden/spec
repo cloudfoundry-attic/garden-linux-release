@@ -117,3 +117,7 @@ properties:
 
   garden.no_proxy:
     description: List of comma-separated hosts that should skip connecting to the proxy
+
+  garden.btrfs_enable_data_cow:
+    description: Enable copy on write for garden backing store
+    default: true

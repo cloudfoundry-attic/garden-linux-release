@@ -148,8 +148,12 @@ case $1 in
       echo "mounting btrfs volume"
       mkdir -p $mount_point
       commit_interval=<%= p("garden.btrfs_commit_interval") %>
+      options="commit=$commit_interval"
+      <% if !p("garden.btrfs_enable_data_cow") %>
+        options="$options,nodatacow"
+      <% end %>
 
-      mount -o nodatacow,commit=$commit_interval -t btrfs $loopback_device $mount_point
+      mount -o $options -t btrfs $loopback_device $mount_point
     fi
     <% end %>
 
