@@ -52,9 +52,12 @@ var (
 
 	enableDirpermLock sync.Once
 	enableDirperm     bool
+	loopDevState      map[string]*ldstate
 )
 
 func init() {
+	loopDevState = make(map[string]*ldstate)
+
 	graphdriver.Register("aufs", Init)
 }
 
@@ -62,6 +65,13 @@ type Driver struct {
 	root       string
 	sync.Mutex // Protects concurrent modification to active
 	active     map[string]int
+}
+
+type ldstate struct {
+	DevicePath       string
+	BackingStorePath string
+	TargetPath       string
+	DiffPath         string
 }
 
 // New returns a new AUFS driver.
@@ -287,6 +297,28 @@ func (a *Driver) GetQuotaed(id, mountLabel string) (string, error) {
 	return out, nil
 }
 
+func (a *Driver) RemoveQuotaed(id string) error {
+	ld, ok := loopDevState[id]
+	if !ok {
+		// This isn't a layer with a loop device, so there's nothing to do.
+		return nil
+	}
+
+	if output, err := exec.Command("umount", ld.DiffPath).CombinedOutput(); err != nil {
+		fmt.Printf("unmounting the loop device (%s): %s", err, output)
+		return nil
+	}
+
+	if output, err := exec.Command("losetup", "-d", ld.DevicePath).CombinedOutput(); err != nil {
+		return fmt.Errorf("detaching loop device its backing store (%s): %s", err, output)
+	}
+
+	if output, err := exec.Command("rm", ld.BackingStorePath).CombinedOutput(); err != nil {
+		return fmt.Errorf("removing the backing store (%s): %s", err, output)
+	}
+	return nil
+}
+
 // Return the rootfs path for the id
 // This will mount the dir at it's given path
 func (a *Driver) Get(id, mountLabel string) (string, error) {
@@ -443,6 +475,11 @@ func (a *Driver) mountQuotaed(id, mountLabel string) error {
 	if err != nil {
 		return err
 	}
+	loopMap := ldstate{}
+	loopDevState[id] = &loopMap
+	loopMap.TargetPath = target
+	loopMap.DiffPath = rw
+	loopMap.BackingStorePath = backingStore.Name()
 
 	if trunc, err := exec.Command("truncate", "-s", "2G", backingStore.Name()).CombinedOutput(); err != nil {
 		return errors.New("truncate: " + string(trunc))
@@ -454,6 +491,7 @@ func (a *Driver) mountQuotaed(id, mountLabel string) error {
 	}
 
 	dev := strings.TrimSuffix(string(device), "\n")
+	loopMap.DevicePath = dev
 
 	mkfs, err := exec.Command("mkfs.ext4", dev).CombinedOutput()
 	if err != nil {

@@ -24,7 +24,7 @@
 [submodule "src/github.com/cloudfoundry-incubator/garden-linux"]
 	path = src/github.com/cloudfoundry-incubator/garden-linux
 	url = https://github.com/cloudfoundry-incubator/garden-linux
-	branch = master
+	branch = wip-aufsnap
 [submodule "src/github.com/Sirupsen/logrus"]
 	path = src/github.com/Sirupsen/logrus
 	url = https://github.com/Sirupsen/logrus
@@ -82,7 +82,7 @@
 [submodule "src/github.com/cloudfoundry-incubator/garden-integration-tests"]
 	path = src/github.com/cloudfoundry-incubator/garden-integration-tests
 	url = https://github.com/cloudfoundry-incubator/garden-integration-tests
-	branch = master
+	branch = wip-aufsnap
 [submodule "src/github.com/pivotal-golang/archiver"]
 	path = src/github.com/pivotal-golang/archiver
 	url = https://github.com/pivotal-golang/archiver
@@ -108,4 +108,4 @@
 [submodule "src/github.com/cloudfoundry-incubator/garden-shed"]
 	path = src/github.com/cloudfoundry-incubator/garden-shed
 	url = https://github.com/cloudfoundry-incubator/garden-shed
-	branch = master
+	branch = wip-aufsnap

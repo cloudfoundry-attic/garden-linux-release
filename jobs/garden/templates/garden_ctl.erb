@@ -113,7 +113,7 @@ case $1 in
     graph_path=/var/vcap/data/garden/btrfs_graph
 
       permit_device_control
-      for i in $(seq 0 64); do
+      for i in $(seq 0 256); do
         if ! mknod -m 0660 /dev/loop$i b 7 $i; then
           break
         fi
