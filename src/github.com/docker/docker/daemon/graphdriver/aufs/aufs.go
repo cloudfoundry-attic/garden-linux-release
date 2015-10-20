@@ -264,7 +264,7 @@ func (a *Driver) Remove(id string) error {
 	return nil
 }
 
-func (a *Driver) GetQuotaed(id, mountLabel string) (string, error) {
+func (a *Driver) GetQuotaed(id, mountLabel string, quota int64) (string, error) {
 	ids, err := getParentIds(a.rootPath(), id)
 	if err != nil {
 		if !os.IsNotExist(err) {
@@ -286,7 +286,7 @@ func (a *Driver) GetQuotaed(id, mountLabel string) (string, error) {
 		out = path.Join(a.rootPath(), "mnt", id)
 
 		if count == 0 {
-			if err := a.mountQuotaed(id, mountLabel); err != nil {
+			if err := a.mountQuotaed(id, mountLabel, quota); err != nil {
 				return "", fmt.Errorf("mount quotaed: %s", err)
 			}
 		}
@@ -454,7 +454,7 @@ func (a *Driver) mount(id, mountLabel string) error {
 	return nil
 }
 
-func (a *Driver) mountQuotaed(id, mountLabel string) error {
+func (a *Driver) mountQuotaed(id, mountLabel string, quota int64) error {
 	// If the id is mounted or we get an error return
 	if mounted, err := a.mounted(id); err != nil || mounted {
 		return fmt.Errorf("mounted?: %s", err)
@@ -481,7 +481,11 @@ func (a *Driver) mountQuotaed(id, mountLabel string) error {
 	loopMap.DiffPath = rw
 	loopMap.BackingStorePath = backingStore.Name()
 
-	if trunc, err := exec.Command("truncate", "-s", "2G", backingStore.Name()).CombinedOutput(); err != nil {
+	quotaStr := "2G"
+	if quota != 0 {
+		quotaStr = fmt.Sprintf("%dKB", quota/1024)
+	}
+	if trunc, err := exec.Command("truncate", "-s", quotaStr, backingStore.Name()).CombinedOutput(); err != nil {
 		return errors.New("truncate: " + string(trunc))
 	}
 
