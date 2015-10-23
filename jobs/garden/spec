@@ -9,7 +9,6 @@ packages:
   - iptables
   - shadow
   - busybox
-  - btrfs-progs
 
 properties:
   garden.listen_network:
@@ -23,18 +22,6 @@ properties:
   garden.network_mtu:
     description: "Maximum network transmission unit length in bytes."
     default: 1500
-
-  garden.disk_quota_enabled:
-    description: "Enforce disk quotas. Disable for nested Garden."
-    default: true
-
-  garden.btrfs_force_sync:
-    description: "Force btrfs synchronization before gathering metrics."
-    default: true
-
-  garden.btrfs_commit_interval:
-    description: "The interval of btrfs periodic commit in seconds."
-    default: 30
 
   garden.deny_networks:
     description: "List of CIDR blocks to which containers will be denied access."
@@ -92,14 +79,6 @@ properties:
   garden.insecure_docker_registry_list:
     description: "An array of IP:PORT tuples and CIDR subnet masks. Pulling from docker registries with self signed certificates will not be permitted if the registry's address is not listed here."
     default: []
-
-  garden.mount_btrfs_loopback:
-    description: "If true, garden should create a btrfs-formatted loopback device for graph storage"
-    default: true
-
-  garden.btrfs_store_size_mb:
-    description: "Size in MB of the BTRFS backing store for graph storage (-1 to use all available space)"
-    default: -1
 
   garden.http_proxy:
     description: Http proxy that Garden process should use 
