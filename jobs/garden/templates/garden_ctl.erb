@@ -24,59 +24,7 @@ function setup() {
   mkdir -p /var/vcap/sys/log/monit
   exec 1>> /var/vcap/sys/log/monit/garden.log
   exec 2>> /var/vcap/sys/log/monit/garden.log
-}
-
-# copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
-# break out of bosh-lite device limitations
-function permit_device_control() {
-  local devices_mount_info=$(cat /proc/self/cgroup | grep devices)
-
-  if [ -z "$devices_mount_info" ]; then
-    # cgroups not set up; must not be in a container
-    return
-  fi
-
-  local devices_subsytems=$(echo $devices_mount_info | cut -d: -f2)
-  local devices_subdir=$(echo $devices_mount_info | cut -d: -f3)
-
-  if [ "$devices_subdir" = "/" ]; then
-    # we're in the root devices cgroup; must not be in a container
-    return
-  fi
-
-  cgroup_dir=${RUN_DIR}/devices-cgroup
-
-  if [ ! -e ${cgroup_dir} ]; then
-    # mount our container's devices subsystem somewhere
-    mkdir ${cgroup_dir}
-  fi
-
-  if ! mountpoint -q ${cgroup_dir}; then
-    mount -t cgroup -o $devices_subsytems none ${cgroup_dir}
-  fi
-
-  # permit our cgroup to do everything with all devices
-  echo a > ${cgroup_dir}${devices_subdir}/devices.allow
-}
-
-function backing_store_size() {
-  local configured=1
-  local configured_store_size_k=0
-  if [[ -1 = $1 ]]; then
-    configured=0
-  else
-    configured_store_size_k=$(($1*1024))
-  fi
-
-  local backing_store_path=$2
-  local df_output=$($3 $2)
-  local available_size_k=$(echo "$df_output" | awk '{ print $4 }' | tail -n 1)
-
-  if [[ 0 = $configured || ($available_size_k -lt $configured_store_size_k) ]]; then
-    echo "$available_size_k"K
-  else
-    echo "$configured_store_size_k"K
-  fi
+  sudo apt-get install aufs-tools -y
 }
 
 case $1 in
@@ -101,7 +49,6 @@ case $1 in
 
     export PATH=/var/vcap/packages/shadow/sbin:$PATH
     export PATH=/var/vcap/packages/iptables/sbin:$PATH
-    export PATH=/var/vcap/packages/btrfs-progs/bin:$PATH
 
     mkdir -p /var/vcap/data/garden/depot
 
@@ -110,49 +57,7 @@ case $1 in
     <% else %>
     snapshots_path=/var/vcap/data/garden/snapshots
     <% end %>
-    graph_path=/var/vcap/data/garden/btrfs_graph
-
-    <% if p("garden.mount_btrfs_loopback") %>
-    mountpoint -q /sys || mount -t sysfs sysfs /sys
-    backing_store=/var/vcap/data/garden/garden_graph_backing_store
-    mount_point=$graph_path
-
-    if [ ! -f $backing_store ]
-    then
-      permit_device_control
-      for i in $(seq 0 64); do
-        if ! mknod -m 0660 /dev/loop$i b 7 $i; then
-          break
-        fi
-      done
-
-      echo "no backing store found at ${backing_store}: creating"
-      touch $backing_store
-      truncate -s $(backing_store_size <%= p('garden.btrfs_store_size_mb')%> "/var/vcap/data" "df -k") $backing_store
-
-      loopback_device=$(losetup -f --show $backing_store)
-      mkfs.btrfs --nodiscard $backing_store
-    else
-      echo "backing store already exists, skipping creation"
-    fi
-
-    if cat /proc/mounts | grep $mount_point
-    then
-      echo "btrfs already mounted at $mount_point"
-    else
-      loopback_device="$(losetup -j $backing_store | cut -d':' -f1)"
-      if [ -z $loopback_device ]; then
-       loopback_device=$(losetup -f --show $backing_store)
-      fi
-
-      echo "mounting btrfs volume"
-      mkdir -p $mount_point
-      commit_interval=<%= p("garden.btrfs_commit_interval") %>
-
-      mount -o nodatacow,commit=$commit_interval -t btrfs $loopback_device $mount_point
-    fi
-    <% end %>
-
+    graph_path=/var/vcap/data/garden/aufs_graph
     mkdir -p $graph_path
     chmod go-rx $graph_path
 
@@ -166,8 +71,6 @@ case $1 in
       -graph=$graph_path \
       -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin \
       -mtu=<%= p("garden.network_mtu") %> \
-      -disableQuotas=<%= !p("garden.disk_quota_enabled") %> \
-      -btrfsForceSync=<%= p("garden.btrfs_force_sync") %> \
       -listenNetwork=<%= p("garden.listen_network") %> \
       -listenAddr=<%= p("garden.listen_address") %> \
       -denyNetworks=<%= p("garden.deny_networks").join(",") %> \

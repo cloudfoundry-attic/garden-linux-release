@@ -19,7 +19,10 @@ fi
 
 tmpdir=/tmp/dir
 rm -fr $tmpdir
-mkdir -p $tmpdir/depot
+mkdir $tmpdir
+mount -t tmpfs none $tmpdir
+
+mkdir $tmpdir/depot
 mkdir $tmpdir/snapshots
 mkdir $tmpdir/graph
 
@@ -49,5 +52,4 @@ popd
 go install github.com/onsi/ginkgo/ginkgo
 cd src/github.com/cloudfoundry-incubator/garden-integration-tests
 export GARDEN_ADDRESS=$(hostname):7777
-export BTRFS_SUPPORTED=true
 ginkgo -p -nodes=4 "$@"

@@ -3,7 +3,6 @@ name: garden-linux
 
 dependencies:
   - golang_1.4
-  - btrfs-progs
 
 files:
   - github.com/cloudfoundry-incubator/garden-linux/Makefile
@@ -177,8 +176,7 @@ files:
   - github.com/docker/docker/cliconfig/*.go # gosub
   - github.com/docker/docker/daemon/events/*.go # gosub
   - github.com/docker/docker/daemon/graphdriver/*.go # gosub
-  - github.com/docker/docker/daemon/graphdriver/btrfs/*.go # gosub
-  - github.com/docker/docker/daemon/graphdriver/vfs/*.go # gosub
+  - github.com/docker/docker/daemon/graphdriver/aufs/*.go # gosub
   - github.com/docker/docker/daemon/network/*.go # gosub
   - github.com/docker/docker/graph/*.go # gosub
   - github.com/docker/docker/graph/tags/*.go # gosub
@@ -187,6 +185,7 @@ files:
   - github.com/docker/docker/opts/*.go # gosub
   - github.com/docker/docker/pkg/archive/*.go # gosub
   - github.com/docker/docker/pkg/chrootarchive/*.go # gosub
+  - github.com/docker/docker/pkg/directory/*.go # gosub
   - github.com/docker/docker/pkg/fileutils/*.go # gosub
   - github.com/docker/docker/pkg/homedir/*.go # gosub
   - github.com/docker/docker/pkg/httputils/*.go # gosub

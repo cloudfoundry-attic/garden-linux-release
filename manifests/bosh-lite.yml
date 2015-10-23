@@ -19,13 +19,10 @@ jobs:
       - name: garden
     properties:
       garden:
-        enable_graph_cleanup: true
+        enable_graph_cleanup: true 
         listen_network: tcp
         listen_address: 0.0.0.0:7777
-        mount_btrfs_loopback: true
         disk_quota_enabled: true
-        btrfs_force_sync: true
-        btrfs_commit_interval: 30
         log_level: debug
 
 networks:
