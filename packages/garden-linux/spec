@@ -121,6 +121,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/system/test_user_execer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_cake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_retainer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fakes/*.go # gosub
