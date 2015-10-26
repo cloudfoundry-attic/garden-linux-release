@@ -66,10 +66,6 @@ properties:
     description: "path to the rootfs to use when a container specifies no rootfs"
     default: /var/vcap/packages/busybox
 
-  garden.enable_graph_cleanup:
-    description: "Enable the graph garbage collection"
-    default: false
- 
   garden.log_level:
     description: "Log level of the Garden server. Can be one of debug, info, error or fatal"
 
@@ -105,10 +101,6 @@ properties:
     description: "Size in MB of the BTRFS backing store for graph storage (-1 to use all available space)"
     default: -1
 
-  garden.persistent_image_list:
-    description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
-    default: []
-   
   garden.http_proxy:
     description: Http proxy that Garden process should use 
 
