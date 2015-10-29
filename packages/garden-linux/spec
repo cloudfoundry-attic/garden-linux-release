@@ -119,6 +119,8 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/system/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_capabilities/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_user_execer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/docker_drivers/aufs/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/docker_drivers/aufs/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_cake/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id/*.go # gosub
