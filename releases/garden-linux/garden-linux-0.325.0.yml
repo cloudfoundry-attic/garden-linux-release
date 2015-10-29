@@ -1,0 +1,62 @@
+---
+packages:
+- name: busybox
+  version: !binary |-
+    MTU5M2M0MWJlYjU3YzEyZDdmMmI4MmRmZjYxYjQ3ZDRkMTE5OTEzZA==
+  fingerprint: !binary |-
+    MTU5M2M0MWJlYjU3YzEyZDdmMmI4MmRmZjYxYjQ3ZDRkMTE5OTEzZA==
+  sha1: !binary |-
+    YzQ2YmVhOTU4NWRlY2M1NGU3MDUyZWZjMjdjMTM4ZDdiNjE4ZmZhZQ==
+  dependencies: []
+- name: garden-linux
+  version: !binary |-
+    OTdlYmEzMzYxOTAzNDRhMDM5YjExYjA5M2RiMjUxZDAwM2M3ZGU5OQ==
+  fingerprint: !binary |-
+    OTdlYmEzMzYxOTAzNDRhMDM5YjExYjA5M2RiMjUxZDAwM2M3ZGU5OQ==
+  sha1: !binary |-
+    ZWIyMTdjODYyNjViZGQ5ZDY2YmVmODJjMGM2ZTcxODdmZWNhZWU0Mg==
+  dependencies:
+  - golang_1.4
+- name: golang_1.4
+  version: !binary |-
+    NzE0Njk4YmMzNTJkMmExZGJlMzIxMzc2ZjA2NzYwMzc1NjgxNDdiYg==
+  fingerprint: !binary |-
+    NzE0Njk4YmMzNTJkMmExZGJlMzIxMzc2ZjA2NzYwMzc1NjgxNDdiYg==
+  sha1: !binary |-
+    Njg1Yjc0OWI0YmM3NTdiOWM1ZGFiNmNiZTg5MjZlNTdhMjI4M2E2OQ==
+  dependencies: []
+- name: iptables
+  version: !binary |-
+    NzIyNmQzMTFlOTBmNDliMDUyODdlNzlmMzM5NTgxYTFkZTllYTgyZQ==
+  fingerprint: !binary |-
+    NzIyNmQzMTFlOTBmNDliMDUyODdlNzlmMzM5NTgxYTFkZTllYTgyZQ==
+  sha1: !binary |-
+    OTgzNDVlNzJmZDk3OTg0YjhjMmExYTQ4NWI5OTg4ZjIwN2RjZTYwZA==
+  dependencies: []
+- name: shadow
+  version: !binary |-
+    ZmZkMTc0MWJkOWUwYTE3NmU2N2M2MWVmNzBjZDBlZDc2YjBlYzI4NQ==
+  fingerprint: !binary |-
+    ZmZkMTc0MWJkOWUwYTE3NmU2N2M2MWVmNzBjZDBlZDc2YjBlYzI4NQ==
+  sha1: !binary |-
+    ZTVlYjM4YmZhOGYzYzgxODA4NmJkNDE2ZmRlYzE0ZjlmYjBiNzEzMQ==
+  dependencies: []
+jobs:
+- name: garden
+  version: !binary |-
+    Mjc1NjA0YmQ2ZDA5MjZhODY5MDQwMWYyODZkZjNkNWU3ZDcyMzEyZA==
+  fingerprint: !binary |-
+    Mjc1NjA0YmQ2ZDA5MjZhODY5MDQwMWYyODZkZjNkNWU3ZDcyMzEyZA==
+  sha1: !binary |-
+    ZWRmNjY1Zjk5OGEyZWM2NTlhMmNkMjUyZDRmYzZmNmJmZDcwNDljMg==
+license:
+  version: !binary |-
+    NWQ4ZWU4MWRjOWU2MTJjMGVlZmNmMzllOWVmYWU2NmQyZmFkMmE5OQ==
+  fingerprint: !binary |-
+    NWQ4ZWU4MWRjOWU2MTJjMGVlZmNmMzllOWVmYWU2NmQyZmFkMmE5OQ==
+  sha1: !binary |-
+    NjYwNDFmYjdkYTRlZTBhYWI1OWFlOWY0YjRlN2ZiMDdkYjdmNjE4OQ==
+commit_hash: 7ccd6de8
+uncommitted_changes: false
+name: garden-linux
+version: 0.325.0
