@@ -24,7 +24,6 @@ function setup() {
   mkdir -p /var/vcap/sys/log/monit
   exec 1>> /var/vcap/sys/log/monit/garden.log
   exec 2>> /var/vcap/sys/log/monit/garden.log
-  sudo apt-get install aufs-tools -y
 }
 
 # copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
