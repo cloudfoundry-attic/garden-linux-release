@@ -7,6 +7,7 @@ dependencies:
 files:
   - github.com/cloudfoundry-incubator/garden-linux/Makefile
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/**/*
+  - github.com/cloudfoundry-incubator/garden-linux/utilities/*.sh
   - github.com/Sirupsen/logrus/*.go # gosub
   - github.com/blang/semver/*.go # gosub
   - github.com/bmizerany/pat/*.go # gosub
