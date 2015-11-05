@@ -26,7 +26,7 @@ function setup() {
   exec 2>> /var/vcap/sys/log/monit/garden.log
 }
 
-# copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb#L54
+# copied from https://github.com/concourse/concourse/blob/master/jobs/baggageclaim/templates/baggageclaim_ctl.erb
 # break out of bosh-lite device limitations
 function permit_device_control() {
   local devices_mount_info=$(cat /proc/self/cgroup | grep devices)
@@ -56,7 +56,7 @@ function permit_device_control() {
   fi
 
   # permit our cgroup to do everything with all devices
-  echo a > ${cgroup_dir}${devices_subdir}/devices.allow
+  echo a > ${cgroup_dir}${devices_subdir}/devices.allow || true
 }
 
 function create_loop_devices() {
