@@ -1,17 +1,22 @@
 package registry
 
 import (
+	"crypto/tls"
 	"net/http"
+	"net/url"
 
+	"github.com/docker/distribution/registry/client/auth"
 	"github.com/docker/docker/cliconfig"
 )
 
+// Service is a registry service. It tracks configuration data such as a list
+// of mirrors.
 type Service struct {
 	Config *ServiceConfig
 }
 
 // NewService returns a new instance of Service ready to be
-// installed no an engine.
+// installed into an engine.
 func NewService(options *Options) *Service {
 	return &Service{
 		Config: NewServiceConfig(options),
@@ -25,13 +30,20 @@ func (s *Service) Auth(authConfig *cliconfig.AuthConfig) (string, error) {
 	addr := authConfig.ServerAddress
 	if addr == "" {
 		// Use the official registry address if not specified.
-		addr = IndexServerAddress()
+		addr = IndexServer
 	}
 	index, err := s.ResolveIndex(addr)
 	if err != nil {
 		return "", err
 	}
-	endpoint, err := NewEndpoint(index, nil)
+
+	endpointVersion := APIVersion(APIVersionUnknown)
+	if V2Only {
+		// Override the endpoint to only attempt a v2 ping
+		endpointVersion = APIVersion2
+	}
+
+	endpoint, err := NewEndpoint(index, nil, endpointVersion)
 	if err != nil {
 		return "", err
 	}
@@ -48,10 +60,11 @@ func (s *Service) Search(term string, authConfig *cliconfig.AuthConfig, headers 
 	}
 
 	// *TODO: Search multiple indexes.
-	endpoint, err := repoInfo.GetEndpoint(http.Header(headers))
+	endpoint, err := NewEndpoint(repoInfo.Index, http.Header(headers), APIVersionUnknown)
 	if err != nil {
 		return nil, err
 	}
+
 	r, err := NewSession(endpoint.client, authConfig, endpoint)
 	if err != nil {
 		return nil, err
@@ -68,4 +81,68 @@ func (s *Service) ResolveRepository(name string) (*RepositoryInfo, error) {
 // ResolveIndex takes indexName and returns index info
 func (s *Service) ResolveIndex(name string) (*IndexInfo, error) {
 	return s.Config.NewIndexInfo(name)
+}
+
+// APIEndpoint represents a remote API endpoint
+type APIEndpoint struct {
+	Mirror        bool
+	URL           string
+	Version       APIVersion
+	Official      bool
+	TrimHostname  bool
+	TLSConfig     *tls.Config
+	VersionHeader string
+	Versions      []auth.APIVersion
+}
+
+// ToV1Endpoint returns a V1 API endpoint based on the APIEndpoint
+func (e APIEndpoint) ToV1Endpoint(metaHeaders http.Header) (*Endpoint, error) {
+	return newEndpoint(e.URL, e.TLSConfig, metaHeaders)
+}
+
+// TLSConfig constructs a client TLS configuration based on server defaults
+func (s *Service) TLSConfig(hostname string) (*tls.Config, error) {
+	return newTLSConfig(hostname, s.Config.isSecureIndex(hostname))
+}
+
+func (s *Service) tlsConfigForMirror(mirror string) (*tls.Config, error) {
+	mirrorURL, err := url.Parse(mirror)
+	if err != nil {
+		return nil, err
+	}
+	return s.TLSConfig(mirrorURL.Host)
+}
+
+// LookupPullEndpoints creates an list of endpoints to try to pull from, in order of preference.
+// It gives preference to v2 endpoints over v1, mirrors over the actual
+// registry, and HTTPS over plain HTTP.
+func (s *Service) LookupPullEndpoints(repoName string) (endpoints []APIEndpoint, err error) {
+	return s.lookupEndpoints(repoName)
+}
+
+// LookupPushEndpoints creates an list of endpoints to try to push to, in order of preference.
+// It gives preference to v2 endpoints over v1, and HTTPS over plain HTTP.
+// Mirrors are not included.
+func (s *Service) LookupPushEndpoints(repoName string) (endpoints []APIEndpoint, err error) {
+	return s.lookupEndpoints(repoName)
+}
+
+func (s *Service) lookupEndpoints(repoName string) (endpoints []APIEndpoint, err error) {
+	endpoints, err = s.lookupV2Endpoints(repoName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if V2Only {
+		return endpoints, nil
+	}
+
+	legacyEndpoints, err := s.lookupV1Endpoints(repoName)
+	if err != nil {
+		return nil, err
+	}
+	endpoints = append(endpoints, legacyEndpoints...)
+
+	return endpoints, nil
 }

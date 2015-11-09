@@ -6,6 +6,15 @@ set -e
 # or:
 #   'wget -qO- https://get.docker.com/ | sh'
 #
+# For test builds (ie. release candidates):
+#   'curl -sSL https://test.docker.com/ | sh'
+# or:
+#   'wget -qO- https://test.docker.com/ | sh'
+#
+# For experimental builds:
+#   'curl -sSL https://experimental.docker.com/ | sh'
+# or:
+#   'wget -qO- https://experimental.docker.com/ | sh'
 #
 # Docker Maintainers:
 #   To update this script on https://get.docker.com,
@@ -21,6 +30,12 @@ command_exists() {
 }
 
 echo_docker_as_nonroot() {
+	if command_exists docker && [ -e /var/run/docker.sock ]; then
+		(
+			set -x
+			$sh_c 'docker version'
+		) || true
+	fi
 	your_user=your-user
 	[ "$user" != 'root' ] && your_user="$user"
 	# intentionally mixed spaces and tabs here -- tabs are stripped by "<<-EOF", spaces are kept in the output
@@ -34,6 +49,32 @@ echo_docker_as_nonroot() {
 	Remember that you will have to log out and back in for this to take effect!
 
 	EOF
+}
+
+# Check if this is a forked Linux distro
+check_forked() {
+	# Check for lsb_release command existence, it usually exists in forked distros
+	if command_exists lsb_release; then
+		# Check if the `-u` option is supported
+		lsb_release -a -u > /dev/null 2>&1
+
+		# Check if the command has exited successfully, it means we're in a forked distro
+		if [ "$?" = "0" ]; then
+			# Print info about current distro
+			cat <<-EOF
+			You're using '$lsb_dist' version '$dist_version'.
+			EOF
+
+			# Get the upstream release info
+			lsb_dist=$(lsb_release -a -u 2>&1 | tr '[:upper:]' '[:lower:]' | grep -E 'id' | cut -d ':' -f 2 | tr -d '[[:space:]]')
+			dist_version=$(lsb_release -a -u 2>&1 | tr '[:upper:]' '[:lower:]' | grep -E 'codename' | cut -d ':' -f 2 | tr -d '[[:space:]]')
+
+			# Print info about upstream distro
+			cat <<-EOF
+			Upstream release is '$lsb_dist' version '$dist_version'.
+			EOF
+		fi
+	fi
 }
 
 do_install() {
@@ -91,8 +132,17 @@ do_install() {
 		curl='busybox wget -qO-'
 	fi
 
+	# check to see which repo they are trying to install from
+	repo='main'
+	if [ "https://test.docker.com/" = "$url" ]; then
+		repo='testing'
+	elif [ "https://experimental.docker.com/" = "$url" ]; then
+		repo='experimental'
+	fi
+
 	# perform some very rudimentary platform detection
 	lsb_dist=''
+	dist_version=''
 	if command_exists lsb_release; then
 		lsb_dist="$(lsb_release -si)"
 	fi
@@ -105,50 +155,89 @@ do_install() {
 	if [ -z "$lsb_dist" ] && [ -r /etc/fedora-release ]; then
 		lsb_dist='fedora'
 	fi
+	if [ -z "$lsb_dist" ] && [ -r /etc/oracle-release ]; then
+		lsb_dist='oracleserver'
+	fi
+	if [ -z "$lsb_dist" ]; then
+		if [ -r /etc/centos-release ] || [ -r /etc/redhat-release ]; then
+			lsb_dist='centos'
+		fi
+	fi
 	if [ -z "$lsb_dist" ] && [ -r /etc/os-release ]; then
 		lsb_dist="$(. /etc/os-release && echo "$ID")"
 	fi
 
 	lsb_dist="$(echo "$lsb_dist" | tr '[:upper:]' '[:lower:]')"
+
 	case "$lsb_dist" in
-		amzn|fedora|centos)
-			if [ "$lsb_dist" = 'amzn' ]; then
-				(
-					set -x
-					$sh_c 'sleep 3; yum -y -q install docker'
-				)
-			else
-				(
-					set -x
-					$sh_c 'sleep 3; yum -y -q install docker-io'
-				)
+
+		ubuntu)
+			if command_exists lsb_release; then
+				dist_version="$(lsb_release --codename | cut -f2)"
 			fi
-			if command_exists docker && [ -e /var/run/docker.sock ]; then
-				(
-					set -x
-					$sh_c 'docker version'
-				) || true
+			if [ -z "$dist_version" ] && [ -r /etc/lsb-release ]; then
+				dist_version="$(. /etc/lsb-release && echo "$DISTRIB_CODENAME")"
 			fi
+		;;
+
+		debian)
+			dist_version="$(cat /etc/debian_version | sed 's/\/.*//' | sed 's/\..*//')"
+			case "$dist_version" in
+				8)
+					dist_version="jessie"
+				;;
+				7)
+					dist_version="wheezy"
+				;;
+			esac
+		;;
+
+		oracleserver)
+			# need to switch lsb_dist to match yum repo URL
+			lsb_dist="oraclelinux"
+			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//')"
+		;;
+
+		fedora|centos)
+			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//')"
+		;;
+
+		*)
+			if command_exists lsb_release; then
+				dist_version="$(lsb_release --codename | cut -f2)"
+			fi
+			if [ -z "$dist_version" ] && [ -r /etc/os-release ]; then
+				dist_version="$(. /etc/os-release && echo "$VERSION_ID")"
+			fi
+		;;
+
+
+	esac
+
+	# Check if this is a forked Linux distro
+	check_forked
+
+	# Run setup for each distro accordingly
+	case "$lsb_dist" in
+		amzn)
+			(
+			set -x
+			$sh_c 'sleep 3; yum -y -q install docker'
+			)
 			echo_docker_as_nonroot
 			exit 0
 			;;
 
-		'opensuse project'|opensuse|'suse linux'|sled)
+		'opensuse project'|opensuse|'suse linux'|sle[sd])
 			(
 				set -x
 				$sh_c 'sleep 3; zypper -n install docker'
 			)
-			if command_exists docker && [ -e /var/run/docker.sock ]; then
-				(
-					set -x
-					$sh_c 'docker version'
-				) || true
-			fi
 			echo_docker_as_nonroot
 			exit 0
 			;;
 
-		ubuntu|debian|linuxmint|'elementary os'|kali)
+		ubuntu|debian)
 			export DEBIAN_FRONTEND=noninteractive
 
 			did_apt_get_update=
@@ -183,7 +272,7 @@ do_install() {
 			# install apparmor utils if they're missing and apparmor is enabled in the kernel
 			# otherwise Docker will fail to start
 			if [ "$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null)" = 'Y' ]; then
-				if command -v apparmor_parser &> /dev/null; then
+				if command -v apparmor_parser >/dev/null 2>&1; then
 					echo 'apparmor is enabled in the kernel and apparmor utils were already installed'
 				else
 					echo 'apparmor is enabled in the kernel, but apparmor_parser missing'
@@ -202,29 +291,39 @@ do_install() {
 				curl='curl -sSL'
 			fi
 			(
-				set -x
-				if [ "https://get.docker.com/" = "$url" ]; then
-					$sh_c "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9"
-				elif [ "https://test.docker.com/" = "$url" ]; then
-					$sh_c "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 740B314AE3941731B942C66ADF4FD13717AAD7D6"
-				elif [ "https://experimental.docker.com/" = "$url" ]; then
-					$sh_c "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys E33FF7BF5C91D50A6F91FFFD4CC38D40F9A96B49"
-				else
-					$sh_c "$curl ${url}gpg | apt-key add -"
-				fi
-				$sh_c "echo deb ${url}ubuntu docker main > /etc/apt/sources.list.d/docker.list"
-				$sh_c 'sleep 3; apt-get update; apt-get install -y -q lxc-docker'
+			set -x
+			$sh_c "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
+			$sh_c "mkdir -p /etc/apt/sources.list.d"
+			$sh_c "echo deb https://apt.dockerproject.org/repo ${lsb_dist}-${dist_version} ${repo} > /etc/apt/sources.list.d/docker.list"
+			$sh_c 'sleep 3; apt-get update; apt-get install -y -q docker-engine'
 			)
-			if command_exists docker && [ -e /var/run/docker.sock ]; then
-				(
-					set -x
-					$sh_c 'docker version'
-				) || true
-			fi
 			echo_docker_as_nonroot
 			exit 0
 			;;
 
+		fedora|centos|oraclelinux)
+			$sh_c "cat >/etc/yum.repos.d/docker-${repo}.repo" <<-EOF
+			[docker-${repo}-repo]
+			name=Docker ${repo} Repository
+			baseurl=https://yum.dockerproject.org/repo/${repo}/${lsb_dist}/${dist_version}
+			enabled=1
+			gpgcheck=1
+			gpgkey=https://yum.dockerproject.org/gpg
+			EOF
+			if [ "$lsb_dist" = "fedora" ] && [ "$dist_version" -ge "22" ]; then
+				(
+					set -x
+					$sh_c 'sleep 3; dnf -y -q install docker-engine'
+				)
+			else
+				(
+					set -x
+					$sh_c 'sleep 3; yum -y -q install docker-engine'
+				)
+			fi
+			echo_docker_as_nonroot
+			exit 0
+			;;
 		gentoo)
 			if [ "$url" = "https://test.docker.com/" ]; then
 				# intentionally mixed spaces and tabs here -- tabs are stripped by "<<-'EOF'", spaces are kept in the output
