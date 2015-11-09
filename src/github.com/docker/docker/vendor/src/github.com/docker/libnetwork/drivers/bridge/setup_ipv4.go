@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-
 	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
@@ -20,31 +19,25 @@ func init() {
 	// In theory this shouldn't matter - in practice there's bound to be a few scripts relying
 	// on the internal addressing or other stupid things like that.
 	// They shouldn't, but hey, let's not break them unless we really have to.
-	for _, addr := range []string{
-		"172.17.42.1/16", // Don't use 172.16.0.0/16, it conflicts with EC2 DNS 172.16.0.23
-		"10.0.42.1/16",   // Don't even try using the entire /8, that's too intrusive
-		"10.1.42.1/16",
-		"10.42.42.1/16",
-		"172.16.42.1/24",
-		"172.16.43.1/24",
-		"172.16.44.1/24",
-		"10.0.42.1/24",
-		"10.0.43.1/24",
-		"192.168.42.1/24",
-		"192.168.43.1/24",
-		"192.168.44.1/24",
-	} {
-		ip, net, err := net.ParseCIDR(addr)
-		if err != nil {
-			log.Errorf("Failed to parse address %s", addr)
-			continue
-		}
-		net.IP = ip.To4()
-		bridgeNetworks = append(bridgeNetworks, net)
+	// Don't use 172.16.0.0/16, it conflicts with EC2 DNS 172.16.0.23
+
+	// 172.[17-31].42.1/16
+	mask := []byte{255, 255, 0, 0}
+	for i := 17; i < 32; i++ {
+		bridgeNetworks = append(bridgeNetworks, &net.IPNet{IP: []byte{172, byte(i), 42, 1}, Mask: mask})
+	}
+	// 10.[0-255].42.1/16
+	for i := 0; i < 256; i++ {
+		bridgeNetworks = append(bridgeNetworks, &net.IPNet{IP: []byte{10, byte(i), 42, 1}, Mask: mask})
+	}
+	// 192.168.[42-44].1/24
+	mask24 := []byte{255, 255, 255, 0}
+	for i := 42; i < 45; i++ {
+		bridgeNetworks = append(bridgeNetworks, &net.IPNet{IP: []byte{192, 168, byte(i), 1}, Mask: mask24})
 	}
 }
 
-func setupBridgeIPv4(config *NetworkConfiguration, i *bridgeInterface) error {
+func setupBridgeIPv4(config *networkConfiguration, i *bridgeInterface) error {
 	addrv4, _, err := i.addresses()
 	if err != nil {
 		return err
@@ -81,12 +74,17 @@ func setupBridgeIPv4(config *NetworkConfiguration, i *bridgeInterface) error {
 	return nil
 }
 
-func allocateBridgeIP(config *NetworkConfiguration, i *bridgeInterface) error {
-	ipAllocator.RequestIP(i.bridgeIPv4, i.bridgeIPv4.IP)
+func allocateBridgeIP(config *networkConfiguration, i *bridgeInterface) error {
+	// Because of the way ipallocator manages the container address space,
+	// reserve bridge address only if it belongs to the container network
+	// (if defined), no need otherwise
+	if config.FixedCIDR == nil || config.FixedCIDR.Contains(i.bridgeIPv4.IP) {
+		ipAllocator.RequestIP(i.bridgeIPv4, i.bridgeIPv4.IP)
+	}
 	return nil
 }
 
-func electBridgeIPv4(config *NetworkConfiguration) (*net.IPNet, error) {
+func electBridgeIPv4(config *networkConfiguration) (*net.IPNet, error) {
 	// Use the requested IPv4 CIDR when available.
 	if config.AddressIPv4 != nil {
 		return config.AddressIPv4, nil
@@ -112,12 +110,18 @@ func electBridgeIPv4(config *NetworkConfiguration) (*net.IPNet, error) {
 	return nil, IPv4AddrRangeError(config.BridgeName)
 }
 
-func setupGatewayIPv4(config *NetworkConfiguration, i *bridgeInterface) error {
+func setupGatewayIPv4(config *networkConfiguration, i *bridgeInterface) error {
 	if !i.bridgeIPv4.Contains(config.DefaultGatewayIPv4) {
 		return &ErrInvalidGateway{}
 	}
-	if _, err := ipAllocator.RequestIP(i.bridgeIPv4, config.DefaultGatewayIPv4); err != nil {
-		return err
+
+	// Because of the way ipallocator manages the container address space,
+	// reserve default gw address only if it belongs to the container network
+	// (if defined), no need otherwise
+	if config.FixedCIDR == nil || config.FixedCIDR.Contains(config.DefaultGatewayIPv4) {
+		if _, err := ipAllocator.RequestIP(i.bridgeIPv4, config.DefaultGatewayIPv4); err != nil {
+			return err
+		}
 	}
 
 	// Store requested default gateway
@@ -126,7 +130,7 @@ func setupGatewayIPv4(config *NetworkConfiguration, i *bridgeInterface) error {
 	return nil
 }
 
-func setupLoopbackAdressesRouting(config *NetworkConfiguration, i *bridgeInterface) error {
+func setupLoopbackAdressesRouting(config *networkConfiguration, i *bridgeInterface) error {
 	// Enable loopback adresses routing
 	sysPath := filepath.Join("/proc/sys/net/ipv4/conf", config.BridgeName, "route_localnet")
 	if err := ioutil.WriteFile(sysPath, []byte{'1', '\n'}, 0644); err != nil {

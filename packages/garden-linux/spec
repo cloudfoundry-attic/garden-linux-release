@@ -120,6 +120,8 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/system/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_capabilities/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/system/test_user_execer/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/distclient/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/distclient/fake_distclient/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/docker_drivers/aufs/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/docker_drivers/aufs/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/*.go # gosub
@@ -130,13 +132,9 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_container_id_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_fetch_request_creator/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_lock/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_pinger/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_registry_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_remote_v1_metadata_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_remote_v2_metadata_provider/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_versioned_fetcher/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_mapper/*.go # gosub
@@ -173,8 +171,18 @@ files:
   - github.com/cloudfoundry/gunk/command_runner/fake_command_runner/matchers/*.go # gosub
   - github.com/cloudfoundry/gunk/command_runner/linux_command_runner/*.go # gosub
   - github.com/codegangsta/cli/*.go # gosub
+  - github.com/docker/distribution/*.go # gosub
+  - github.com/docker/distribution/context/*.go # gosub
   - github.com/docker/distribution/digest/*.go # gosub
+  - github.com/docker/distribution/manifest/*.go # gosub
+  - github.com/docker/distribution/registry/api/errcode/*.go # gosub
   - github.com/docker/distribution/registry/api/v2/*.go # gosub
+  - github.com/docker/distribution/registry/client/*.go # gosub
+  - github.com/docker/distribution/registry/client/auth/*.go # gosub
+  - github.com/docker/distribution/registry/client/transport/*.go # gosub
+  - github.com/docker/distribution/registry/storage/cache/*.go # gosub
+  - github.com/docker/distribution/registry/storage/cache/memory/*.go # gosub
+  - github.com/docker/distribution/uuid/*.go # gosub
   - github.com/docker/docker/api/types/*.go # gosub
   - github.com/docker/docker/autogen/dockerversion/*.go # gosub
   - github.com/docker/docker/cliconfig/*.go # gosub
@@ -185,11 +193,9 @@ files:
   - github.com/docker/docker/graph/*.go # gosub
   - github.com/docker/docker/graph/tags/*.go # gosub
   - github.com/docker/docker/image/*.go # gosub
-  - github.com/docker/docker/nat/*.go # gosub
   - github.com/docker/docker/opts/*.go # gosub
   - github.com/docker/docker/pkg/archive/*.go # gosub
   - github.com/docker/docker/pkg/chrootarchive/*.go # gosub
-  - github.com/docker/docker/pkg/directory/*.go # gosub
   - github.com/docker/docker/pkg/fileutils/*.go # gosub
   - github.com/docker/docker/pkg/homedir/*.go # gosub
   - github.com/docker/docker/pkg/httputils/*.go # gosub
@@ -197,6 +203,7 @@ files:
   - github.com/docker/docker/pkg/jsonmessage/*.go # gosub
   - github.com/docker/docker/pkg/mflag/*.go # gosub
   - github.com/docker/docker/pkg/mount/*.go # gosub
+  - github.com/docker/docker/pkg/nat/*.go # gosub
   - github.com/docker/docker/pkg/parsers/*.go # gosub
   - github.com/docker/docker/pkg/parsers/filters/*.go # gosub
   - github.com/docker/docker/pkg/parsers/kernel/*.go # gosub
@@ -211,9 +218,8 @@ files:
   - github.com/docker/docker/pkg/system/*.go # gosub
   - github.com/docker/docker/pkg/tarsum/*.go # gosub
   - github.com/docker/docker/pkg/term/*.go # gosub
-  - github.com/docker/docker/pkg/timeoutconn/*.go # gosub
   - github.com/docker/docker/pkg/timeutils/*.go # gosub
-  - github.com/docker/docker/pkg/transport/*.go # gosub
+  - github.com/docker/docker/pkg/tlsconfig/*.go # gosub
   - github.com/docker/docker/pkg/truncindex/*.go # gosub
   - github.com/docker/docker/pkg/ulimit/*.go # gosub
   - github.com/docker/docker/pkg/units/*.go # gosub
@@ -222,15 +228,12 @@ files:
   - github.com/docker/docker/pkg/version/*.go # gosub
   - github.com/docker/docker/registry/*.go # gosub
   - github.com/docker/docker/runconfig/*.go # gosub
-  - github.com/docker/docker/trust/*.go # gosub
   - github.com/docker/docker/utils/*.go # gosub
-  - github.com/docker/libcontainer/label/*.go # gosub
+  - github.com/docker/docker/volume/*.go # gosub
   - github.com/docker/libcontainer/netlink/*.go # gosub
   - github.com/docker/libcontainer/user/*.go # gosub
   - github.com/docker/libtrust/*.go # gosub
-  - github.com/docker/libtrust/trustgraph/*.go # gosub
   - github.com/gogo/protobuf/proto/*.go # gosub
-  - github.com/golang/protobuf/proto/*.go # gosub
   - github.com/gorilla/context/*.go # gosub
   - github.com/gorilla/mux/*.go # gosub
   - github.com/kr/pty/*.go # gosub
@@ -255,7 +258,6 @@ files:
   - github.com/onsi/gomega/format/*.go # gosub
   - github.com/onsi/gomega/gbytes/*.go # gosub
   - github.com/onsi/gomega/gexec/*.go # gosub
-  - github.com/onsi/gomega/ghttp/*.go # gosub
   - github.com/onsi/gomega/internal/assertion/*.go # gosub
   - github.com/onsi/gomega/internal/asyncassertion/*.go # gosub
   - github.com/onsi/gomega/internal/oraclematcher/*.go # gosub
@@ -266,6 +268,7 @@ files:
   - github.com/onsi/gomega/matchers/support/goraph/node/*.go # gosub
   - github.com/onsi/gomega/matchers/support/goraph/util/*.go # gosub
   - github.com/onsi/gomega/types/*.go # gosub
+  - github.com/opencontainers/runc/libcontainer/user/*.go # gosub
   - github.com/pivotal-golang/archiver/extractor/test_helper/*.go # gosub
   - github.com/pivotal-golang/lager/*.go # gosub
   - github.com/pivotal-golang/lager/lagertest/*.go # gosub
@@ -277,5 +280,9 @@ files:
   - github.com/tedsuo/ifrit/ginkgomon/*.go # gosub
   - github.com/tedsuo/ifrit/http_server/*.go # gosub
   - github.com/tedsuo/rata/*.go # gosub
+  - github.com/vbatts/tar-split/archive/tar/*.go # gosub
+  - github.com/vbatts/tar-split/tar/asm/*.go # gosub
+  - github.com/vbatts/tar-split/tar/storage/*.go # gosub
   - github.com/vito/gosub/*.go # gosub
   - golang.org/x/crypto/ssh/terminal/*.go # gosub
+  - golang.org/x/net/context/*.go # gosub

@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 
+	"github.com/docker/libnetwork/types"
 	"github.com/vishvananda/netlink"
 )
 
@@ -72,20 +74,22 @@ func NetworkOverlaps(netX *net.IPNet, netY *net.IPNet) bool {
 
 // NetworkRange calculates the first and last IP addresses in an IPNet
 func NetworkRange(network *net.IPNet) (net.IP, net.IP) {
-	var netIP net.IP
-	if network.IP.To4() != nil {
-		netIP = network.IP.To4()
-	} else if network.IP.To16() != nil {
-		netIP = network.IP.To16()
-	} else {
+	if network == nil {
 		return nil, nil
 	}
 
-	lastIP := make([]byte, len(netIP), len(netIP))
-	for i := 0; i < len(netIP); i++ {
-		lastIP[i] = netIP[i] | ^network.Mask[i]
+	firstIP := network.IP.Mask(network.Mask)
+	lastIP := types.GetIPCopy(firstIP)
+	for i := 0; i < len(firstIP); i++ {
+		lastIP[i] = firstIP[i] | ^network.Mask[i]
 	}
-	return netIP.Mask(network.Mask), net.IP(lastIP)
+
+	if network.IP.To4() != nil {
+		firstIP = firstIP.To4()
+		lastIP = lastIP.To4()
+	}
+
+	return firstIP, lastIP
 }
 
 // GetIfaceAddr returns the first IPv4 address and slice of IPv6 addresses for the specified network interface
@@ -146,4 +150,73 @@ func GenerateRandomName(prefix string, size int) (string, error) {
 		return "", err
 	}
 	return prefix + hex.EncodeToString(id)[:size], nil
+}
+
+// GenerateIfaceName returns an interface name using the passed in
+// prefix and the length of random bytes. The api ensures that the
+// there are is no interface which exists with that name.
+func GenerateIfaceName(prefix string, len int) (string, error) {
+	for i := 0; i < 3; i++ {
+		name, err := GenerateRandomName(prefix, len)
+		if err != nil {
+			continue
+		}
+		if _, err := net.InterfaceByName(name); err != nil {
+			if strings.Contains(err.Error(), "no such") {
+				return name, nil
+			}
+			return "", err
+		}
+	}
+	return "", types.InternalErrorf("could not generate interface name")
+}
+
+func byteArrayToInt(array []byte, numBytes int) uint64 {
+	if numBytes <= 0 || numBytes > 8 {
+		panic("Invalid argument")
+	}
+	num := 0
+	for i := 0; i <= len(array)-1; i++ {
+		num += int(array[len(array)-1-i]) << uint(i*8)
+	}
+	return uint64(num)
+}
+
+// ATo64 converts a byte array into a uint32
+func ATo64(array []byte) uint64 {
+	return byteArrayToInt(array, 8)
+}
+
+// ATo32 converts a byte array into a uint32
+func ATo32(array []byte) uint32 {
+	return uint32(byteArrayToInt(array, 4))
+}
+
+// ATo16 converts a byte array into a uint16
+func ATo16(array []byte) uint16 {
+	return uint16(byteArrayToInt(array, 2))
+}
+
+func intToByteArray(val uint64, numBytes int) []byte {
+	array := make([]byte, numBytes)
+	for i := numBytes - 1; i >= 0; i-- {
+		array[i] = byte(val & 0xff)
+		val = val >> 8
+	}
+	return array
+}
+
+// U64ToA converts a uint64 to a byte array
+func U64ToA(val uint64) []byte {
+	return intToByteArray(uint64(val), 8)
+}
+
+// U32ToA converts a uint64 to a byte array
+func U32ToA(val uint32) []byte {
+	return intToByteArray(uint64(val), 4)
+}
+
+// U16ToA converts a uint64 to a byte array
+func U16ToA(val uint16) []byte {
+	return intToByteArray(uint64(val), 2)
 }

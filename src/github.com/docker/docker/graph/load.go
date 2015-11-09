@@ -31,10 +31,7 @@ func (s *TagStore) Load(inTar io.ReadCloser, outStream io.Writer) error {
 	if err := os.Mkdir(repoDir, os.ModeDir); err != nil {
 		return err
 	}
-	images, err := s.graph.Map()
-	if err != nil {
-		return err
-	}
+	images := s.graph.Map()
 	excludes := make([]string, len(images))
 	i := 0
 	for k := range images {
@@ -89,22 +86,22 @@ func (s *TagStore) recursiveLoad(address, tmpImageDir string) error {
 
 		imageJson, err := ioutil.ReadFile(filepath.Join(tmpImageDir, "repo", address, "json"))
 		if err != nil {
-			logrus.Debugf("Error reading json", err)
+			logrus.Debugf("Error reading json: %v", err)
 			return err
 		}
 
 		layer, err := os.Open(filepath.Join(tmpImageDir, "repo", address, "layer.tar"))
 		if err != nil {
-			logrus.Debugf("Error reading embedded tar", err)
+			logrus.Debugf("Error reading embedded tar: %v", err)
 			return err
 		}
 		img, err := image.NewImgJSON(imageJson)
 		if err != nil {
-			logrus.Debugf("Error unmarshalling json", err)
+			logrus.Debugf("Error unmarshalling json: %v", err)
 			return err
 		}
 		if err := image.ValidateID(img.ID); err != nil {
-			logrus.Debugf("Error validating ID: %s", err)
+			logrus.Debugf("Error validating ID: %v", err)
 			return err
 		}
 
@@ -128,7 +125,7 @@ func (s *TagStore) recursiveLoad(address, tmpImageDir string) error {
 				}
 			}
 		}
-		if err := s.graph.Register(img, layer); err != nil {
+		if err := s.graph.Register(v1ImageDescriptor{img}, layer); err != nil {
 			return err
 		}
 	}
