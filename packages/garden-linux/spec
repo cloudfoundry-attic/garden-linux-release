@@ -237,6 +237,7 @@ files:
   - github.com/nu7hatch/gouuid/*.go # gosub
   - github.com/onsi/ginkgo/*.go # gosub
   - github.com/onsi/ginkgo/config/*.go # gosub
+  - github.com/onsi/ginkgo/extensions/table/*.go # gosub
   - github.com/onsi/ginkgo/internal/codelocation/*.go # gosub
   - github.com/onsi/ginkgo/internal/containernode/*.go # gosub
   - github.com/onsi/ginkgo/internal/failer/*.go # gosub
