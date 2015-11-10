@@ -196,6 +196,7 @@ files:
   - github.com/docker/docker/opts/*.go # gosub
   - github.com/docker/docker/pkg/archive/*.go # gosub
   - github.com/docker/docker/pkg/chrootarchive/*.go # gosub
+  - github.com/docker/docker/pkg/directory/*.go # gosub
   - github.com/docker/docker/pkg/fileutils/*.go # gosub
   - github.com/docker/docker/pkg/homedir/*.go # gosub
   - github.com/docker/docker/pkg/httputils/*.go # gosub
