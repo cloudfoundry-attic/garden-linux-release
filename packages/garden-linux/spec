@@ -130,6 +130,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_retainer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/pkg/retrier/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_container_id_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/repository_fetcher/fake_lock/*.go # gosub
@@ -272,6 +273,8 @@ files:
   - github.com/opencontainers/runc/libcontainer/label/*.go # gosub
   - github.com/opencontainers/runc/libcontainer/user/*.go # gosub
   - github.com/pivotal-golang/archiver/extractor/test_helper/*.go # gosub
+  - github.com/pivotal-golang/clock/*.go # gosub
+  - github.com/pivotal-golang/clock/fakeclock/*.go # gosub
   - github.com/pivotal-golang/lager/*.go # gosub
   - github.com/pivotal-golang/lager/lagertest/*.go # gosub
   - github.com/pivotal-golang/localip/*.go # gosub

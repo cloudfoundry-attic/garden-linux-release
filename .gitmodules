@@ -117,3 +117,7 @@
 	path = src/golang.org/x/net
 	url = https://go.googlesource.com/net
 	branch = master
+[submodule "src/github.com/pivotal-golang/clock"]
+	path = src/github.com/pivotal-golang/clock
+	url = https://github.com/pivotal-golang/clock
+	branch = master
