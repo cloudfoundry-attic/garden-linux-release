@@ -269,6 +269,7 @@ files:
   - github.com/onsi/gomega/matchers/support/goraph/node/*.go # gosub
   - github.com/onsi/gomega/matchers/support/goraph/util/*.go # gosub
   - github.com/onsi/gomega/types/*.go # gosub
+  - github.com/opencontainers/runc/libcontainer/label/*.go # gosub
   - github.com/opencontainers/runc/libcontainer/user/*.go # gosub
   - github.com/pivotal-golang/archiver/extractor/test_helper/*.go # gosub
   - github.com/pivotal-golang/lager/*.go # gosub

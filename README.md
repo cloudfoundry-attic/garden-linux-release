@@ -7,7 +7,7 @@ To play with it, deploy to BOSH Lite in the usual way:
 ```
 bosh create release
 bosh upload release
-bosh deployment manifest/bosh-lite.yml
+bosh deployment manifests/bosh-lite.yml
 bosh deploy
 ```
 
