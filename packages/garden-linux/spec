@@ -87,6 +87,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/iptables_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/iptables_manager/fake_chain/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/quota_manager/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/linux_container/quota_manager/fake_aufsdiffpathfinder/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/logging/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/bridgemgr/*.go # gosub
