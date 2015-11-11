@@ -146,7 +146,10 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/connection/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden/client/connection/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/routes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden/scripts/update-godoc/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/server/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/server/bomberman/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/server/streamer/*.go # gosub
@@ -237,6 +240,7 @@ files:
   - github.com/docker/libcontainer/user/*.go # gosub
   - github.com/docker/libtrust/*.go # gosub
   - github.com/gogo/protobuf/proto/*.go # gosub
+  - github.com/golang/protobuf/proto/*.go # gosub
   - github.com/gorilla/context/*.go # gosub
   - github.com/gorilla/mux/*.go # gosub
   - github.com/kr/pty/*.go # gosub
@@ -261,6 +265,7 @@ files:
   - github.com/onsi/gomega/format/*.go # gosub
   - github.com/onsi/gomega/gbytes/*.go # gosub
   - github.com/onsi/gomega/gexec/*.go # gosub
+  - github.com/onsi/gomega/ghttp/*.go # gosub
   - github.com/onsi/gomega/internal/assertion/*.go # gosub
   - github.com/onsi/gomega/internal/asyncassertion/*.go # gosub
   - github.com/onsi/gomega/internal/oraclematcher/*.go # gosub
