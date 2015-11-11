@@ -121,3 +121,7 @@
 	path = src/github.com/pivotal-golang/clock
 	url = https://github.com/pivotal-golang/clock
 	branch = master
+[submodule "src/github.com/golang/protobuf"]
+	path = src/github.com/golang/protobuf
+	url = https://github.com/golang/protobuf
+	branch = master
