@@ -1,0 +1,13 @@
+---
+image: docker:///cloudfoundry/golang-ci
+
+platform: linux
+
+inputs:
+- name: release-develop
+
+params:
+  GARDEN_ADDRESS: ""
+
+run:
+  path: release-develop/ci/scripts/performance-tests
