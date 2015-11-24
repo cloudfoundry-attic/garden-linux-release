@@ -34,3 +34,4 @@ jobs:
     garden:
       listen_network: tcp
       listen_address: 0.0.0.0:7777
+      enable_graph_cleanup: true
