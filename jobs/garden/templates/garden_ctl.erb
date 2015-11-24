@@ -118,6 +118,7 @@ case $1 in
       -mtu=<%= p("garden.network_mtu") %> \
       -listenNetwork=<%= p("garden.listen_network") %> \
       -listenAddr=<%= p("garden.listen_address") %> \
+      -stateDir=<%= p("garden.state_dir_path") %> \
       -denyNetworks=<%= p("garden.deny_networks").join(",") %> \
       -allowNetworks=<%= p("garden.allow_networks").join(",") %> \
       -allowHostAccess=<%= p("garden.allow_host_access") %> \
