@@ -26,6 +26,7 @@ mount -t tmpfs none $tmpdir
 mkdir $tmpdir/depot
 mkdir $tmpdir/snapshots
 mkdir $tmpdir/graph
+mkdir $tmpdir/state
 
 permit_device_control
 create_loop_devices 256
@@ -34,6 +35,7 @@ create_loop_devices 256
   -depot=$tmpdir/depot \
   -snapshots=$tmpdir/snapshots \
   -graph=$tmpdir/graph \
+  -stateDir=$tmpdir/state \
   -bin=$PWD/linux_backend/bin \
   -listenNetwork=tcp \
   -listenAddr=0.0.0.0:7777 \
