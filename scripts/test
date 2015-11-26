@@ -8,6 +8,14 @@ pushd src/github.com/cloudfoundry-incubator/garden-linux
 	ginkgo -r
 popd
 
+pushd src/github.com/cloudfoundry-incubator/garden-shed
+	ginkgo -r
+popd
+
+pushd src/github.com/cloudfoundry-incubator/garden
+	ginkgo -r
+popd
+
 ./scripts/remote-fly ci/nested-garden-linux-tests.yml
 ./scripts/remote-fly ci/nested-shed-tests.yml
 ./scripts/remote-fly ci/nested-tests.yml
