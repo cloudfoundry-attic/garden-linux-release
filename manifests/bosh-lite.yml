@@ -19,6 +19,7 @@ jobs:
       - name: garden
     properties:
       garden:
+        enable_graph_cleanup: true
         listen_network: tcp
         listen_address: 0.0.0.0:7777
         log_level: debug
