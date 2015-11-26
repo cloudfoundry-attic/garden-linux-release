@@ -90,7 +90,8 @@ case $1 in
     mkdir -p $TMPDIR
 
     export PATH=/var/vcap/packages/shadow/sbin:$PATH
-    export PATH=/var/vcap/packages/iptables/sbin:$PATH
+    export PATH=/var/vcap/packages/shadow/sbin:$PATH
+    export PATH=/var/vcap/jobs/garden/bin:$PATH
 
     mkdir -p /var/vcap/data/garden/depot
 

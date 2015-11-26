@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# this is as hack to circumvent the fact that docker calls auplink
+# we don't actually need any of it's actual functionality

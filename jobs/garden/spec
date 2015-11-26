@@ -3,6 +3,7 @@ name: garden
 
 templates:
   garden_ctl.erb: bin/garden_ctl
+  auplink: bin/auplink
 
 packages:
   - garden-linux
