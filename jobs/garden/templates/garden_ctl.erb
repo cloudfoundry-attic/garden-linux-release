@@ -60,7 +60,7 @@ function permit_device_control() {
 }
 
 function create_loop_devices() {
-  amt=${1:-300}
+  amt=$1
   for i in $(seq 0 $amt); do
     mknod -m 0660 /dev/loop$i b 7 $i || true
   done
@@ -85,7 +85,7 @@ case $1 in
     mkdir -p $RUN_DIR
     mkdir -p $DATA_DIR
     mkdir -p $LOG_DIR
-    
+
     export TMPDIR=/var/vcap/data/tmp
     mkdir -p $TMPDIR
 
@@ -105,7 +105,7 @@ case $1 in
     chmod go-rx $graph_path
 
     permit_device_control
-    create_loop_devices
+    create_loop_devices <%= p("garden.max_containers").to_i + 10 %>
 
     ulimit -n 65536
 
@@ -128,6 +128,7 @@ case $1 in
       -rootfs=<%= p("garden.default_container_rootfs") %> \
       -containerGraceTime=<%= p("garden.default_container_grace_time") %> \
       -enableGraphCleanup=<%= p("garden.enable_graph_cleanup") %> \
+      -maxContainers=<%= p("garden.max_containers") %> \
     <% if_p("garden.log_level") do |log_level| %> \
       -logLevel=<%= log_level %> \
     <% end %> \
