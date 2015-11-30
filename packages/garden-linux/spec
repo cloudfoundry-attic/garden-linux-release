@@ -54,7 +54,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/containerizer/system/fake_user/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/containerizer/system/pivotter/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/containerizer/wshd/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/debug/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/hook/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/hook/hook/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/bind_mount/*.go # gosub
@@ -87,6 +86,8 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/iptables_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/iptables_manager/fake_chain/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/logging/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/metrics/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/metrics/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/bridgemgr/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/network/bridgemgr/fake_bridge_manager/*.go # gosub
