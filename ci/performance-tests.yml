@@ -9,6 +9,7 @@ inputs:
 params:
   GARDEN_ADDRESS: ""
   DATADOG_API_KEY: ""
+  ENVIRONMENT: ""
 
 run:
   path: release-develop/ci/scripts/performance-tests
