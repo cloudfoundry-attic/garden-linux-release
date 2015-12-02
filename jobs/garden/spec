@@ -66,8 +66,8 @@ properties:
     description: "Log level of the Garden server. Can be one of debug, info, error or fatal"
 
   garden.max_containers:
-    description: "Maximum number of containers that garden will have running at the same time."
-    default: 256
+    description: "Maximum number of containers that garden will have running at the same time. It is not recommended to set this larger than 250."
+    default: 250
 
   garden.network_pool:
     description: "A CIDR subnet mask specifying the range of subnets available to be assigned to containers."
