@@ -36,10 +36,6 @@ properties:
     description: "A boolean stating whether or not containers started on this host should be able to reach this host."
     default: false
 
-  garden.state_dir_path:
-    description: "Garden state directory used for port pools"
-    default: /var/vcap/data/garden/
-
   garden.docker_registry_endpoint:
     description: "An URL pointing to the Docker registry to use to fetch Docker images. If unset, this will default to the Docker default."
 
@@ -96,9 +92,9 @@ properties:
   garden.persistent_image_list:
     description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
     default: []
-   
+
   garden.http_proxy:
-    description: Http proxy that Garden process should use 
+    description: Http proxy that Garden process should use
 
   garden.https_proxy:
     description: Https proxy that Garden process should use
