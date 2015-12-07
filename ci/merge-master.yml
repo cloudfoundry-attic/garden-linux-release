@@ -6,5 +6,8 @@ inputs:
   - name: release-master
   - name: release-develop
 
+outputs:
+- name: release-merged
+
 run:
   path: release-develop/ci/scripts/merge-master
