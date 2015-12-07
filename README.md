@@ -5,6 +5,8 @@ A [BOSH](http://docs.cloudfoundry.org/bosh/) release for deploying [Garden Linux
 To play with it, deploy to BOSH Lite in the usual way:
 
 ```
+git clone --recursive https://github.com/cloudfoundry-incubator/garden-linux-release
+cd garden-linux-release
 bosh create release
 bosh upload release
 bosh deployment manifests/bosh-lite.yml
@@ -12,6 +14,17 @@ bosh deploy
 ```
 
 When you're done, Garden Linux should be running and you can create containers, run a process in a container, and so on via the [garden client](https://github.com/cloudfoundry-incubator/garden).
+
+To update to a new version:
+
+```
+git pull
+git submodule update --init --recursive
+bosh create release
+bosh upload release
+bosh deployment manifests/bosh-lite.yml
+bosh deploy
+```
 
 ## Developing
 
