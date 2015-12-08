@@ -1,0 +1,18 @@
+---
+image: docker:///cloudfoundry/golang-ci
+
+platform: linux
+
+inputs:
+- name: diego-perf-release
+- name: garden-ci
+
+params:
+  BOSH_TARGET: ""
+  BOSH_USERNAME: ""
+  BOSH_PASSWORD: ""
+  BOSH_CF_DEPLOYMENT: ""
+  BOSH_DIEGO_DEPLOYMENT: ""
+
+run:
+  path: release-develop/ci/scripts/diego-performance-tests
