@@ -6,6 +6,7 @@ platform: linux
 inputs:
 - name: diego-perf-release
 - name: garden-ci
+- name: release-develop
 
 params:
   BOSH_TARGET: ""
