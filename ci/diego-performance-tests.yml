@@ -1,5 +1,5 @@
 ---
-image: docker:///cloudfoundry/golang-ci
+image: docker:///concourse/concourse-ci
 
 platform: linux
 
