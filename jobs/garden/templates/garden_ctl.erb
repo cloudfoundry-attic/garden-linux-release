@@ -93,6 +93,8 @@ case $1 in
     export PATH=/var/vcap/packages/shadow/sbin:$PATH
     export PATH=/var/vcap/jobs/garden/bin:$PATH
 
+    cp /var/vcap/packages/tar/tar /var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin
+
     mkdir -p /var/vcap/data/garden/depot
 
     <% if p("garden.destroy_containers_on_start") %>

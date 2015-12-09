@@ -10,6 +10,7 @@ packages:
   - iptables
   - shadow
   - busybox
+  - tar
 
 properties:
   garden.listen_network:

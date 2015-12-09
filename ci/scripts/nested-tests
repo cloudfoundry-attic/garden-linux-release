@@ -28,6 +28,8 @@ mkdir $tmpdir/snapshots
 mkdir $tmpdir/graph
 mkdir $tmpdir/state
 
+cp /opt/tar $PWD/linux_backend/bin
+
 permit_device_control
 create_loop_devices 256
 
