@@ -27,4 +27,4 @@ bosh -n create release --force && bosh upload release --rebase && bosh -n deploy
 
 bosh run errand garden_container_creation_tests --keep-alive
 # this will download results.csv.log, which is a csv file containing the timestamps for the pushes and scales.
-bosh logs garden_container_creation_tests
+bosh logs garden_container_creation_tests 0
