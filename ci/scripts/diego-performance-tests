@@ -16,10 +16,10 @@ bosh download manifest $BOSH_CF_DEPLOYMENT > $MANIFESTS_DIR/cf.yml
 bosh download manifest $BOSH_DIEGO_DEPLOYMENT > $MANIFESTS_DIR/diego.yml
 
 ./scripts/generate-deployment-manifest \
-  ../garden-ci/stubs/director-uuid.yml \
-  ../garden-ci/stubs/perf/property-overrides.yml \
-  ../garden-ci/stubs/perf/instance-count-overrides.yml \
-  ../garden-ci/stubs/perf/iaas-settings.yml \
+  ../garden-ci/deployments/kinabalu/stubs/director-uuid.yml \
+  ../garden-ci/deployments/kinabalu/stubs/perf/property-overrides.yml \
+  ../garden-ci/deployments/kinabalu/stubs/perf/instance-count-overrides.yml \
+  ../garden-ci/deployments/kinabalu/stubs/perf/iaas-settings.yml \
   $MANIFESTS_DIR > $ERRAND_DIR/perf.yml
 
 bosh deployment $ERRAND_DIR/perf.yml
