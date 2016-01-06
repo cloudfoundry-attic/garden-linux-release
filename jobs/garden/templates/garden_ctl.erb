@@ -117,6 +117,7 @@ case $1 in
       -depot=/var/vcap/data/garden/depot \
       -snapshots="${snapshots_path}" \
       -graph=$graph_path \
+      -graphDriver=aufs \
       -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin \
       -mtu=<%= p("garden.network_mtu") %> \
       -listenNetwork=<%= p("garden.listen_network") %> \
