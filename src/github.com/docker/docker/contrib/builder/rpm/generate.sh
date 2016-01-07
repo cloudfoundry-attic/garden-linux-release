@@ -47,6 +47,10 @@ for version in "${versions[@]}"; do
 			# get "Development Tools" packages and dependencies
 			echo 'RUN yum groupinstall -y "Development Tools"' >> "$version/Dockerfile"
 			;;
+		opensuse:*)
+			# get rpm-build and curl packages and dependencies
+			echo 'RUN zypper --non-interactive install ca-certificates* curl gzip rpm-build' >> "$version/Dockerfile"
+			;;
 		*)
 			echo 'RUN yum install -y @development-tools fedora-packager' >> "$version/Dockerfile"
 			;;
@@ -58,6 +62,8 @@ for version in "${versions[@]}"; do
 		device-mapper-devel # for "libdevmapper.h"
 		glibc-static
 		libselinux-devel # for "libselinux.so"
+		selinux-policy
+		selinux-policy-devel
 		sqlite-devel # for "sqlite3.h"
 		tar # older versions of dev-tools do not have tar
 	)
@@ -68,7 +74,17 @@ for version in "${versions[@]}"; do
 			packages=( --enablerepo=ol7_optional_latest "${packages[*]}" )
 			;;
 	esac
-	echo "RUN yum install -y ${packages[*]}" >> "$version/Dockerfile"
+
+	case "$from" in
+		opensuse:*)
+			packages=( "${packages[@]/btrfs-progs-devel/libbtrfs-devel}" )
+			# use zypper
+			echo "RUN zypper --non-interactive install ${packages[*]}" >> "$version/Dockerfile"
+			;;
+		*)
+			echo "RUN yum install -y ${packages[*]}" >> "$version/Dockerfile"
+			;;
+	esac
 
 	echo >> "$version/Dockerfile"
 

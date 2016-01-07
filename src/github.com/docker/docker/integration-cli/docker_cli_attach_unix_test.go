@@ -13,36 +13,35 @@ import (
 	"github.com/kr/pty"
 )
 
-// #9860
+// #9860 Make sure attach ends when container ends (with no errors)
 func (s *DockerSuite) TestAttachClosedOnContainerStop(c *check.C) {
 
-	out, _ := dockerCmd(c, "run", "-dti", "busybox", "sleep", "2")
+	out, _ := dockerCmd(c, "run", "-dti", "busybox", "/bin/sh", "-c", `trap 'exit 0' SIGTERM; while true; do sleep 1; done`)
 
 	id := strings.TrimSpace(out)
-	if err := waitRun(id); err != nil {
-		c.Fatal(err)
-	}
+	c.Assert(waitRun(id), check.IsNil)
+
+	_, tty, err := pty.Open()
+	c.Assert(err, check.IsNil)
+
+	attachCmd := exec.Command(dockerBinary, "attach", id)
+	attachCmd.Stdin = tty
+	attachCmd.Stdout = tty
+	attachCmd.Stderr = tty
+	err = attachCmd.Start()
+	c.Assert(err, check.IsNil)
 
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
-
-		_, tty, err := pty.Open()
-		if err != nil {
-			errChan <- err
-			return
-		}
-		attachCmd := exec.Command(dockerBinary, "attach", id)
-		attachCmd.Stdin = tty
-		attachCmd.Stdout = tty
-		attachCmd.Stderr = tty
-
-		if err := attachCmd.Run(); err != nil {
-			errChan <- err
-			return
-		}
+		// Container is wating for us to signal it to stop
+		dockerCmd(c, "stop", id)
+		// And wait for the attach command to end
+		errChan <- attachCmd.Wait()
 	}()
 
+	// Wait for the docker to end (should be done by the
+	// stop command in the go routine)
 	dockerCmd(c, "wait", id)
 
 	select {
@@ -73,10 +72,8 @@ func (s *DockerSuite) TestAttachAfterDetach(c *check.C) {
 		close(errChan)
 	}()
 
-	time.Sleep(500 * time.Millisecond)
-	if err := waitRun(name); err != nil {
-		c.Fatal(err)
-	}
+	c.Assert(waitRun(name), check.IsNil)
+
 	cpty.Write([]byte{16})
 	time.Sleep(100 * time.Millisecond)
 	cpty.Write([]byte{17})
@@ -137,9 +134,7 @@ func (s *DockerSuite) TestAttachAfterDetach(c *check.C) {
 func (s *DockerSuite) TestAttachDetach(c *check.C) {
 	out, _ := dockerCmd(c, "run", "-itd", "busybox", "cat")
 	id := strings.TrimSpace(out)
-	if err := waitRun(id); err != nil {
-		c.Fatal(err)
-	}
+	c.Assert(waitRun(id), check.IsNil)
 
 	cpty, tty, err := pty.Open()
 	if err != nil {
@@ -157,9 +152,7 @@ func (s *DockerSuite) TestAttachDetach(c *check.C) {
 	if err := cmd.Start(); err != nil {
 		c.Fatal(err)
 	}
-	if err := waitRun(id); err != nil {
-		c.Fatalf("error waiting for container to start: %v", err)
-	}
+	c.Assert(waitRun(id), check.IsNil)
 
 	if _, err := cpty.Write([]byte("hello\n")); err != nil {
 		c.Fatal(err)
@@ -211,9 +204,7 @@ func (s *DockerSuite) TestAttachDetach(c *check.C) {
 func (s *DockerSuite) TestAttachDetachTruncatedID(c *check.C) {
 	out, _ := dockerCmd(c, "run", "-itd", "busybox", "cat")
 	id := stringid.TruncateID(strings.TrimSpace(out))
-	if err := waitRun(id); err != nil {
-		c.Fatal(err)
-	}
+	c.Assert(waitRun(id), check.IsNil)
 
 	cpty, tty, err := pty.Open()
 	if err != nil {

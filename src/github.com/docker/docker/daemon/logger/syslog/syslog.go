@@ -1,5 +1,6 @@
 // +build linux
 
+// Package syslog provides the logdriver for forwarding server logs to syslog endpoints.
 package syslog
 
 import (
@@ -15,6 +16,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/daemon/logger"
+	"github.com/docker/docker/daemon/logger/loggerutils"
 	"github.com/docker/docker/pkg/urlutil"
 )
 
@@ -43,7 +45,7 @@ var facilities = map[string]syslog.Priority{
 	"local7":   syslog.LOG_LOCAL7,
 }
 
-type Syslog struct {
+type syslogger struct {
 	writer *syslog.Writer
 }
 
@@ -56,10 +58,13 @@ func init() {
 	}
 }
 
+// New creates a syslog logger using the configuration passed in on
+// the context. Supported context configuration variables are
+// syslog-address, syslog-facility, & syslog-tag.
 func New(ctx logger.Context) (logger.Logger, error) {
-	tag := ctx.Config["syslog-tag"]
-	if tag == "" {
-		tag = ctx.ContainerID[:12]
+	tag, err := loggerutils.ParseLogTag(ctx, "{{.ID}}")
+	if err != nil {
+		return nil, err
 	}
 
 	proto, address, err := parseAddress(ctx.Config["syslog-address"])
@@ -82,65 +87,76 @@ func New(ctx logger.Context) (logger.Logger, error) {
 		return nil, err
 	}
 
-	return &Syslog{
+	return &syslogger{
 		writer: log,
 	}, nil
 }
 
-func (s *Syslog) Log(msg *logger.Message) error {
+func (s *syslogger) Log(msg *logger.Message) error {
 	if msg.Source == "stderr" {
 		return s.writer.Err(string(msg.Line))
 	}
 	return s.writer.Info(string(msg.Line))
 }
 
-func (s *Syslog) Close() error {
+func (s *syslogger) Close() error {
 	return s.writer.Close()
 }
 
-func (s *Syslog) Name() string {
+func (s *syslogger) Name() string {
 	return name
 }
 
 func parseAddress(address string) (string, string, error) {
-	if urlutil.IsTransportURL(address) {
-		url, err := url.Parse(address)
-		if err != nil {
-			return "", "", err
-		}
-
-		// unix socket validation
-		if url.Scheme == "unix" {
-			if _, err := os.Stat(url.Path); err != nil {
-				return "", "", err
-			}
-			return url.Scheme, url.Path, nil
-		}
-
-		// here we process tcp|udp
-		host := url.Host
-		if _, _, err := net.SplitHostPort(host); err != nil {
-			if !strings.Contains(err.Error(), "missing port in address") {
-				return "", "", err
-			}
-			host = host + ":514"
-		}
-
-		return url.Scheme, host, nil
+	if address == "" {
+		return "", "", nil
+	}
+	if !urlutil.IsTransportURL(address) {
+		return "", "", fmt.Errorf("syslog-address should be in form proto://address, got %v", address)
+	}
+	url, err := url.Parse(address)
+	if err != nil {
+		return "", "", err
 	}
 
-	return "", "", nil
+	// unix socket validation
+	if url.Scheme == "unix" {
+		if _, err := os.Stat(url.Path); err != nil {
+			return "", "", err
+		}
+		return url.Scheme, url.Path, nil
+	}
+
+	// here we process tcp|udp
+	host := url.Host
+	if _, _, err := net.SplitHostPort(host); err != nil {
+		if !strings.Contains(err.Error(), "missing port in address") {
+			return "", "", err
+		}
+		host = host + ":514"
+	}
+
+	return url.Scheme, host, nil
 }
 
+// ValidateLogOpt looks for syslog specific log options
+// syslog-address, syslog-facility, & syslog-tag.
 func ValidateLogOpt(cfg map[string]string) error {
 	for key := range cfg {
 		switch key {
 		case "syslog-address":
-		case "syslog-tag":
 		case "syslog-facility":
+		case "syslog-tag":
+		case "tag":
 		default:
 			return fmt.Errorf("unknown log opt '%s' for syslog log driver", key)
 		}
+	}
+	if _, _, err := parseAddress(cfg["syslog-address"]); err != nil {
+		return err
+	}
+	if _, err := parseFacility(cfg["syslog-facility"]); err != nil {
+		return err
 	}
 	return nil
 }

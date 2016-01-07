@@ -7,13 +7,13 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"sync"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest"
 	"github.com/docker/docker/image"
+	"github.com/docker/docker/pkg/broadcaster"
 	"github.com/docker/docker/pkg/progressreader"
 	"github.com/docker/docker/pkg/streamformatter"
 	"github.com/docker/docker/pkg/stringid"
@@ -34,9 +34,9 @@ type v2Puller struct {
 
 func (p *v2Puller) Pull(tag string) (fallback bool, err error) {
 	// TODO(tiborvass): was ReceiveTimeout
-	p.repo, err = NewV2Repository(p.repoInfo, p.endpoint, p.config.MetaHeaders, p.config.AuthConfig)
+	p.repo, err = NewV2Repository(p.repoInfo, p.endpoint, p.config.MetaHeaders, p.config.AuthConfig, "pull")
 	if err != nil {
-		logrus.Debugf("Error getting v2 registry: %v", err)
+		logrus.Warnf("Error getting v2 registry: %v", err)
 		return true, err
 	}
 
@@ -74,43 +74,46 @@ func (p *v2Puller) pullV2Repository(tag string) (err error) {
 	}
 
 	poolKey := "v2:" + taggedName
-	c, err := p.poolAdd("pull", poolKey)
-	if err != nil {
-		if c != nil {
-			// Another pull of the same repository is already taking place; just wait for it to finish
-			p.config.OutStream.Write(p.sf.FormatStatus("", "Repository %s already being pulled by another client. Waiting.", p.repoInfo.CanonicalName))
-			<-c
-			return nil
-		}
-		return err
+	broadcaster, found := p.poolAdd("pull", poolKey)
+	broadcaster.Add(p.config.OutStream)
+	if found {
+		// Another pull of the same repository is already taking place; just wait for it to finish
+		return broadcaster.Wait()
 	}
-	defer p.poolRemove("pull", poolKey)
+
+	// This must use a closure so it captures the value of err when the
+	// function returns, not when the 'defer' is evaluated.
+	defer func() {
+		p.poolRemoveWithError("pull", poolKey, err)
+	}()
 
 	var layersDownloaded bool
 	for _, tag := range tags {
 		// pulledNew is true if either new layers were downloaded OR if existing images were newly tagged
 		// TODO(tiborvass): should we change the name of `layersDownload`? What about message in WriteStatus?
-		pulledNew, err := p.pullV2Tag(tag, taggedName)
+		pulledNew, err := p.pullV2Tag(broadcaster, tag, taggedName)
 		if err != nil {
 			return err
 		}
 		layersDownloaded = layersDownloaded || pulledNew
 	}
 
-	WriteStatus(taggedName, p.config.OutStream, p.sf, layersDownloaded)
+	writeStatus(taggedName, broadcaster, p.sf, layersDownloaded)
 
 	return nil
 }
 
 // downloadInfo is used to pass information from download to extractor
 type downloadInfo struct {
-	img     contentAddressableDescriptor
-	tmpFile *os.File
-	digest  digest.Digest
-	layer   distribution.ReadSeekCloser
-	size    int64
-	err     chan error
-	out     io.Writer // Download progress is written here.
+	img         contentAddressableDescriptor
+	imgIndex    int
+	tmpFile     *os.File
+	digest      digest.Digest
+	layer       distribution.ReadSeekCloser
+	size        int64
+	err         chan error
+	poolKey     string
+	broadcaster *broadcaster.Buffered
 }
 
 // contentAddressableDescriptor is used to pass image data from a manifest to the
@@ -174,28 +177,6 @@ func (errVerification) Error() string { return "verification failed" }
 func (p *v2Puller) download(di *downloadInfo) {
 	logrus.Debugf("pulling blob %q to %s", di.digest, di.img.id)
 
-	out := di.out
-
-	poolKey := "v2img:" + di.img.id
-	if c, err := p.poolAdd("pull", poolKey); err != nil {
-		if c != nil {
-			out.Write(p.sf.FormatProgress(stringid.TruncateID(di.img.id), "Layer already being pulled by another client. Waiting.", nil))
-			<-c
-			out.Write(p.sf.FormatProgress(stringid.TruncateID(di.img.id), "Download complete", nil))
-		} else {
-			logrus.Debugf("Image (id: %s) pull is already running, skipping: %v", di.img.id, err)
-		}
-		di.err <- nil
-		return
-	}
-
-	defer p.poolRemove("pull", poolKey)
-	tmpFile, err := ioutil.TempFile("", "GetImageBlob")
-	if err != nil {
-		di.err <- err
-		return
-	}
-
 	blobs := p.repo.Blobs(context.Background())
 
 	desc, err := blobs.Stat(context.Background(), di.digest)
@@ -222,16 +203,16 @@ func (p *v2Puller) download(di *downloadInfo) {
 
 	reader := progressreader.New(progressreader.Config{
 		In:        ioutil.NopCloser(io.TeeReader(layerDownload, verifier)),
-		Out:       out,
+		Out:       di.broadcaster,
 		Formatter: p.sf,
-		Size:      int(di.size),
+		Size:      di.size,
 		NewLines:  false,
 		ID:        stringid.TruncateID(di.img.id),
 		Action:    "Downloading",
 	})
-	io.Copy(tmpFile, reader)
+	io.Copy(di.tmpFile, reader)
 
-	out.Write(p.sf.FormatProgress(stringid.TruncateID(di.img.id), "Verifying Checksum", nil))
+	di.broadcaster.Write(p.sf.FormatProgress(stringid.TruncateID(di.img.id), "Verifying Checksum", nil))
 
 	if !verifier.Verified() {
 		err = fmt.Errorf("filesystem layer verification failed for digest %s", di.digest)
@@ -240,18 +221,16 @@ func (p *v2Puller) download(di *downloadInfo) {
 		return
 	}
 
-	out.Write(p.sf.FormatProgress(stringid.TruncateID(di.img.id), "Download complete", nil))
+	di.broadcaster.Write(p.sf.FormatProgress(stringid.TruncateID(di.img.id), "Download complete", nil))
 
-	logrus.Debugf("Downloaded %s to tempfile %s", di.img.id, tmpFile.Name())
-	di.tmpFile = tmpFile
+	logrus.Debugf("Downloaded %s to tempfile %s", di.img.id, di.tmpFile.Name())
 	di.layer = layerDownload
 
 	di.err <- nil
 }
 
-func (p *v2Puller) pullV2Tag(tag, taggedName string) (tagUpdated bool, err error) {
+func (p *v2Puller) pullV2Tag(out io.Writer, tag, taggedName string) (tagUpdated bool, err error) {
 	logrus.Debugf("Pulling tag from V2 registry: %q", tag)
-	out := p.config.OutStream
 
 	manSvc, err := p.repo.Manifests(context.Background())
 	if err != nil {
@@ -277,52 +256,32 @@ func (p *v2Puller) pullV2Tag(tag, taggedName string) (tagUpdated bool, err error
 		return false, err
 	}
 
-	imgs, err := p.getImageInfos(*verifiedManifest)
+	imgs, err := p.getImageInfos(verifiedManifest)
 	if err != nil {
 		return false, err
 	}
 
-	// By using a pipeWriter for each of the downloads to write their progress
-	// to, we can avoid an issue where this function returns an error but
-	// leaves behind running download goroutines. By splitting the writer
-	// with a pipe, we can close the pipe if there is any error, consequently
-	// causing each download to cancel due to an error writing to this pipe.
-	pipeReader, pipeWriter := io.Pipe()
-	go func() {
-		if _, err := io.Copy(out, pipeReader); err != nil {
-			logrus.Errorf("error copying from layer download progress reader: %s", err)
-			if err := pipeReader.CloseWithError(err); err != nil {
-				logrus.Errorf("error closing the progress reader: %s", err)
+	out.Write(p.sf.FormatStatus(tag, "Pulling from %s", p.repo.Name()))
+
+	var downloads []*downloadInfo
+
+	var layerIDs []string
+	defer func() {
+		p.graph.Release(p.sessionID, layerIDs...)
+
+		for _, d := range downloads {
+			p.poolRemoveWithError("pull", d.poolKey, err)
+			if d.tmpFile != nil {
+				d.tmpFile.Close()
+				if err := os.RemoveAll(d.tmpFile.Name()); err != nil {
+					logrus.Errorf("Failed to remove temp file: %s", d.tmpFile.Name())
+				}
 			}
 		}
 	}()
-	defer func() {
-		if err != nil {
-			// All operations on the pipe are synchronous. This call will wait
-			// until all current readers/writers are done using the pipe then
-			// set the error. All successive reads/writes will return with this
-			// error.
-			pipeWriter.CloseWithError(fmt.Errorf("download canceled %+v", err))
-		} else {
-			// If no error then just close the pipe.
-			pipeWriter.Close()
-		}
-	}()
-
-	out.Write(p.sf.FormatStatus(tag, "Pulling from %s", p.repo.Name()))
-
-	downloads := make([]downloadInfo, len(verifiedManifest.FSLayers))
-
-	layerIDs := []string{}
-	defer func() {
-		p.graph.Release(p.sessionID, layerIDs...)
-	}()
 
 	for i := len(verifiedManifest.FSLayers) - 1; i >= 0; i-- {
-
 		img := imgs[i]
-		downloads[i].img = img
-		downloads[i].digest = verifiedManifest.FSLayers[i].BlobSum
 
 		p.graph.Retain(p.sessionID, img.id)
 		layerIDs = append(layerIDs, img.id)
@@ -343,73 +302,99 @@ func (p *v2Puller) pullV2Tag(tag, taggedName string) (tagUpdated bool, err error
 
 		out.Write(p.sf.FormatProgress(stringid.TruncateID(img.id), "Pulling fs layer", nil))
 
-		downloads[i].err = make(chan error, 1)
-		downloads[i].out = pipeWriter
-		go p.download(&downloads[i])
+		d := &downloadInfo{
+			img:      img,
+			imgIndex: i,
+			poolKey:  "v2layer:" + img.id,
+			digest:   verifiedManifest.FSLayers[i].BlobSum,
+			// TODO: seems like this chan buffer solved hanging problem in go1.5,
+			// this can indicate some deeper problem that somehow we never take
+			// error from channel in loop below
+			err: make(chan error, 1),
+		}
+
+		tmpFile, err := ioutil.TempFile("", "GetImageBlob")
+		if err != nil {
+			return false, err
+		}
+		d.tmpFile = tmpFile
+
+		downloads = append(downloads, d)
+
+		broadcaster, found := p.poolAdd("pull", d.poolKey)
+		broadcaster.Add(out)
+		d.broadcaster = broadcaster
+		if found {
+			d.err <- nil
+		} else {
+			go p.download(d)
+		}
 	}
 
-	for i := len(downloads) - 1; i >= 0; i-- {
-		d := &downloads[i]
-		if d.err != nil {
-			if err := <-d.err; err != nil {
+	for _, d := range downloads {
+		if err := <-d.err; err != nil {
+			return false, err
+		}
+
+		if d.layer == nil {
+			// Wait for a different pull to download and extract
+			// this layer.
+			err = d.broadcaster.Wait()
+			if err != nil {
 				return false, err
 			}
+			continue
 		}
-		if d.layer != nil {
-			// if tmpFile is empty assume download and extracted elsewhere
-			defer os.Remove(d.tmpFile.Name())
-			defer d.tmpFile.Close()
-			d.tmpFile.Seek(0, 0)
-			if d.tmpFile != nil {
-				err := func() error {
-					reader := progressreader.New(progressreader.Config{
-						In:        d.tmpFile,
-						Out:       out,
-						Formatter: p.sf,
-						Size:      int(d.size),
-						NewLines:  false,
-						ID:        stringid.TruncateID(d.img.id),
-						Action:    "Extracting",
-					})
 
-					p.graph.imageMutex.Lock(d.img.id)
-					defer p.graph.imageMutex.Unlock(d.img.id)
+		d.tmpFile.Seek(0, 0)
+		err := func() error {
+			reader := progressreader.New(progressreader.Config{
+				In:        d.tmpFile,
+				Out:       d.broadcaster,
+				Formatter: p.sf,
+				Size:      d.size,
+				NewLines:  false,
+				ID:        stringid.TruncateID(d.img.id),
+				Action:    "Extracting",
+			})
 
-					// Must recheck the data on disk if any exists.
-					// This protects against races where something
-					// else is written to the graph under this ID
-					// after attemptIDReuse.
-					if p.graph.Exists(d.img.id) {
-						if err := p.validateImageInGraph(d.img.id, imgs, i); err != nil {
-							return fmt.Errorf("image validation failed: %v", err)
-						}
-					}
+			p.graph.imagesMutex.Lock()
+			defer p.graph.imagesMutex.Unlock()
 
-					if err := p.graph.register(d.img, reader); err != nil {
-						return err
-					}
+			p.graph.imageMutex.Lock(d.img.id)
+			defer p.graph.imageMutex.Unlock(d.img.id)
 
-					if err := p.graph.setLayerDigest(d.img.id, d.digest); err != nil {
-						return err
-					}
-
-					if err := p.graph.setV1CompatibilityConfig(d.img.id, d.img.v1Compatibility); err != nil {
-						return err
-					}
-
-					return nil
-				}()
-				if err != nil {
-					return false, err
+			// Must recheck the data on disk if any exists.
+			// This protects against races where something
+			// else is written to the graph under this ID
+			// after attemptIDReuse.
+			if p.graph.Exists(d.img.id) {
+				if err := p.validateImageInGraph(d.img.id, imgs, d.imgIndex); err != nil {
+					return fmt.Errorf("image validation failed: %v", err)
 				}
-
-				// FIXME: Pool release here for parallel tag pull (ensures any downloads block until fully extracted)
 			}
-			out.Write(p.sf.FormatProgress(stringid.TruncateID(d.img.id), "Pull complete", nil))
-			tagUpdated = true
-		} else {
-			out.Write(p.sf.FormatProgress(stringid.TruncateID(d.img.id), "Already exists", nil))
+
+			if err := p.graph.register(d.img, reader); err != nil {
+				return err
+			}
+
+			if err := p.graph.setLayerDigest(d.img.id, d.digest); err != nil {
+				return err
+			}
+
+			if err := p.graph.setV1CompatibilityConfig(d.img.id, d.img.v1Compatibility); err != nil {
+				return err
+			}
+
+			return nil
+		}()
+		if err != nil {
+			return false, err
 		}
+
+		d.broadcaster.Write(p.sf.FormatProgress(stringid.TruncateID(d.img.id), "Pull complete", nil))
+		d.broadcaster.Close()
+		tagUpdated = true
 	}
 
 	manifestDigest, _, err := digestFromManifest(unverifiedManifest, p.repoInfo.LocalName)
@@ -432,17 +417,18 @@ func (p *v2Puller) pullV2Tag(tag, taggedName string) (tagUpdated bool, err error
 		}
 	}
 
+	firstID := layerIDs[len(layerIDs)-1]
 	if utils.DigestReference(tag) {
 		// TODO(stevvooe): Ideally, we should always set the digest so we can
 		// use the digest whether we pull by it or not. Unfortunately, the tag
 		// store treats the digest as a separate tag, meaning there may be an
 		// untagged digest image that would seem to be dangling by a user.
-		if err = p.SetDigest(p.repoInfo.LocalName, tag, downloads[0].img.id); err != nil {
+		if err = p.SetDigest(p.repoInfo.LocalName, tag, firstID); err != nil {
 			return false, err
 		}
 	} else {
 		// only set the repository/tag -> image ID mapping when pulling by tag (i.e. not by digest)
-		if err = p.Tag(p.repoInfo.LocalName, tag, downloads[0].img.id, true); err != nil {
+		if err = p.Tag(p.repoInfo.LocalName, tag, firstID, true); err != nil {
 			return false, err
 		}
 	}
@@ -525,7 +511,7 @@ func fixManifestLayers(m *manifest.Manifest) error {
 	for _, img := range images {
 		// skip IDs that appear after each other, we handle those later
 		if _, exists := idmap[img.ID]; img.ID != lastID && exists {
-			return fmt.Errorf("ID %+v appears multiple times in manifest.", img.ID)
+			return fmt.Errorf("ID %+v appears multiple times in manifest", img.ID)
 		}
 		lastID = img.ID
 		idmap[lastID] = struct{}{}
@@ -547,7 +533,7 @@ func fixManifestLayers(m *manifest.Manifest) error {
 // getImageInfos returns an imageinfo struct for every image in the manifest.
 // These objects contain both calculated strongIDs and compatibilityIDs found
 // in v1Compatibility object.
-func (p *v2Puller) getImageInfos(m manifest.Manifest) ([]contentAddressableDescriptor, error) {
+func (p *v2Puller) getImageInfos(m *manifest.Manifest) ([]contentAddressableDescriptor, error) {
 	imgs := make([]contentAddressableDescriptor, len(m.FSLayers))
 
 	var parent digest.Digest
@@ -565,8 +551,6 @@ func (p *v2Puller) getImageInfos(m manifest.Manifest) ([]contentAddressableDescr
 	return imgs, nil
 }
 
-var idReuseLock sync.Mutex
-
 // attemptIDReuse does a best attempt to match verified compatibilityIDs
 // already in the graph with the computed strongIDs so we can keep using them.
 // This process will never fail but may just return the strongIDs if none of
@@ -577,8 +561,8 @@ func (p *v2Puller) attemptIDReuse(imgs []contentAddressableDescriptor) {
 	// This function needs to be protected with a global lock, because it
 	// locks multiple IDs at once, and there's no good way to make sure
 	// the locking happens a deterministic order.
-	idReuseLock.Lock()
-	defer idReuseLock.Unlock()
+	p.graph.imagesMutex.Lock()
+	defer p.graph.imagesMutex.Unlock()
 
 	idMap := make(map[string]struct{})
 	for _, img := range imgs {
@@ -670,9 +654,8 @@ func (p *v2Puller) validateImageInGraph(id string, imgs []contentAddressableDesc
 	if i != len(imgs)-1 {
 		if img.Parent != imgs[i+1].id { // comparing that graph points to validated ID
 			return fmt.Errorf("parent: %v %v", img.Parent, imgs[i+1].id)
-		} else {
-			parentID = imgs[i+1].strongID
 		}
+		parentID = imgs[i+1].strongID
 	} else if img.Parent != "" {
 		return fmt.Errorf("unexpected parent: %v", img.Parent)
 	}

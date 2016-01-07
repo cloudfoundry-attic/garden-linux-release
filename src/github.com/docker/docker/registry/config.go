@@ -23,23 +23,19 @@ type Options struct {
 const (
 	// DefaultNamespace is the default namespace
 	DefaultNamespace = "docker.io"
-	// DefaultV2Registry is the URI of the default v2 registry
-	DefaultV2Registry = "https://registry-1.docker.io"
 	// DefaultRegistryVersionHeader is the name of the default HTTP header
 	// that carries Registry version info
 	DefaultRegistryVersionHeader = "Docker-Distribution-Api-Version"
-	// DefaultV1Registry is the URI of the default v1 registry
-	DefaultV1Registry = "https://index.docker.io"
-
-	// CertsDir is the directory where certificates are stored
-	CertsDir = "/etc/docker/certs.d"
 
 	// IndexServer is the v1 registry server used for user auth + account creation
 	IndexServer = DefaultV1Registry + "/v1/"
 	// IndexName is the name of the index
 	IndexName = "docker.io"
+
 	// NotaryServer is the endpoint serving the Notary trust server
 	NotaryServer = "https://notary.docker.io"
+
+	// IndexServer = "https://registry-stage.hub.docker.com/v1/"
 )
 
 var (
@@ -243,15 +239,28 @@ func validateNoSchema(reposName string) error {
 
 // ValidateRepositoryName validates a repository name
 func ValidateRepositoryName(reposName string) error {
-	var err error
-	if err = validateNoSchema(reposName); err != nil {
-		return err
+	_, _, err := loadRepositoryName(reposName, true)
+	return err
+}
+
+// loadRepositoryName returns the repo name splitted into index name
+// and remote repo name. It returns an error if the name is not valid.
+func loadRepositoryName(reposName string, checkRemoteName bool) (string, string, error) {
+	if err := validateNoSchema(reposName); err != nil {
+		return "", "", err
 	}
 	indexName, remoteName := splitReposName(reposName)
-	if _, err = ValidateIndexName(indexName); err != nil {
-		return err
+
+	var err error
+	if indexName, err = ValidateIndexName(indexName); err != nil {
+		return "", "", err
 	}
-	return validateRemoteName(remoteName)
+	if checkRemoteName {
+		if err = validateRemoteName(remoteName); err != nil {
+			return "", "", err
+		}
+	}
+	return indexName, remoteName, nil
 }
 
 // NewIndexInfo returns IndexInfo configuration from indexName
@@ -304,13 +313,9 @@ func splitReposName(reposName string) (string, string) {
 }
 
 // NewRepositoryInfo validates and breaks down a repository name into a RepositoryInfo
-func (config *ServiceConfig) NewRepositoryInfo(reposName string) (*RepositoryInfo, error) {
-	if err := validateNoSchema(reposName); err != nil {
-		return nil, err
-	}
-
-	indexName, remoteName := splitReposName(reposName)
-	if err := validateRemoteName(remoteName); err != nil {
+func (config *ServiceConfig) NewRepositoryInfo(reposName string, bySearch bool) (*RepositoryInfo, error) {
+	indexName, remoteName, err := loadRepositoryName(reposName, !bySearch)
+	if err != nil {
 		return nil, err
 	}
 
@@ -318,18 +323,13 @@ func (config *ServiceConfig) NewRepositoryInfo(reposName string) (*RepositoryInf
 		RemoteName: remoteName,
 	}
 
-	var err error
 	repoInfo.Index, err = config.NewIndexInfo(indexName)
 	if err != nil {
 		return nil, err
 	}
 
 	if repoInfo.Index.Official {
-		normalizedName := repoInfo.RemoteName
-		if strings.HasPrefix(normalizedName, "library/") {
-			// If pull "library/foo", it's stored locally under "foo"
-			normalizedName = strings.SplitN(normalizedName, "/", 2)[1]
-		}
+		normalizedName := normalizeLibraryRepoName(repoInfo.RemoteName)
 
 		repoInfo.LocalName = normalizedName
 		repoInfo.RemoteName = normalizedName
@@ -343,7 +343,7 @@ func (config *ServiceConfig) NewRepositoryInfo(reposName string) (*RepositoryInf
 
 		repoInfo.CanonicalName = "docker.io/" + repoInfo.RemoteName
 	} else {
-		repoInfo.LocalName = repoInfo.Index.Name + "/" + repoInfo.RemoteName
+		repoInfo.LocalName = localNameFromRemote(repoInfo.Index.Name, repoInfo.RemoteName)
 		repoInfo.CanonicalName = repoInfo.LocalName
 
 	}
@@ -363,15 +363,54 @@ func (repoInfo *RepositoryInfo) GetSearchTerm() string {
 // ParseRepositoryInfo performs the breakdown of a repository name into a RepositoryInfo, but
 // lacks registry configuration.
 func ParseRepositoryInfo(reposName string) (*RepositoryInfo, error) {
-	return emptyServiceConfig.NewRepositoryInfo(reposName)
+	return emptyServiceConfig.NewRepositoryInfo(reposName, false)
+}
+
+// ParseIndexInfo will use repository name to get back an indexInfo.
+func ParseIndexInfo(reposName string) (*IndexInfo, error) {
+	indexName, _ := splitReposName(reposName)
+
+	indexInfo, err := emptyServiceConfig.NewIndexInfo(indexName)
+	if err != nil {
+		return nil, err
+	}
+	return indexInfo, nil
 }
 
 // NormalizeLocalName transforms a repository name into a normalize LocalName
 // Passes through the name without transformation on error (image id, etc)
+// It does not use the repository info because we don't want to load
+// the repository index and do request over the network.
 func NormalizeLocalName(name string) string {
-	repoInfo, err := ParseRepositoryInfo(name)
+	indexName, remoteName, err := loadRepositoryName(name, true)
 	if err != nil {
 		return name
 	}
-	return repoInfo.LocalName
+
+	var officialIndex bool
+	// Return any configured index info, first.
+	if index, ok := emptyServiceConfig.IndexConfigs[indexName]; ok {
+		officialIndex = index.Official
+	}
+
+	if officialIndex {
+		return normalizeLibraryRepoName(remoteName)
+	}
+	return localNameFromRemote(indexName, remoteName)
+}
+
+// normalizeLibraryRepoName removes the library prefix from
+// the repository name for official repos.
+func normalizeLibraryRepoName(name string) string {
+	if strings.HasPrefix(name, "library/") {
+		// If pull "library/foo", it's stored locally under "foo"
+		name = strings.SplitN(name, "/", 2)[1]
+	}
+	return name
+}
+
+// localNameFromRemote combines the index name and the repo remote name
+// to generate a repo local name.
+func localNameFromRemote(indexName, remoteName string) string {
+	return indexName + "/" + remoteName
 }

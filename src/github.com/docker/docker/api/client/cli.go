@@ -52,12 +52,14 @@ type DockerCli struct {
 	outFd uintptr
 	// isTerminalIn indicates whether the client's STDIN is a TTY
 	isTerminalIn bool
-	// isTerminalOut dindicates whether the client's STDOUT is a TTY
+	// isTerminalOut indicates whether the client's STDOUT is a TTY
 	isTerminalOut bool
 	// transport holds the client transport instance.
 	transport *http.Transport
 }
 
+// Initialize calls the init function that will setup the configuration for the client
+// such as the TLS, tcp and other parameters used to run the client.
 func (cli *DockerCli) Initialize() error {
 	if cli.init == nil {
 		return nil
@@ -77,6 +79,8 @@ func (cli *DockerCli) CheckTtyInput(attachStdin, ttyMode bool) error {
 	return nil
 }
 
+// PsFormat returns the format string specified in the configuration.
+// String contains columns and format specification, for example {{ID}\t{{Name}}.
 func (cli *DockerCli) PsFormat() string {
 	return cli.configFile.PsFormat
 }
@@ -94,25 +98,28 @@ func NewDockerCli(in io.ReadCloser, out, err io.Writer, clientFlags *cli.ClientF
 	}
 
 	cli.init = func() error {
+
 		clientFlags.PostParse()
 
 		hosts := clientFlags.Common.Hosts
 
 		switch len(hosts) {
 		case 0:
-			defaultHost := os.Getenv("DOCKER_HOST")
-			if defaultHost == "" {
-				defaultHost = opts.DefaultHost
-			}
-			defaultHost, err := opts.ValidateHost(defaultHost)
-			if err != nil {
-				return err
-			}
-			hosts = []string{defaultHost}
+			hosts = []string{os.Getenv("DOCKER_HOST")}
 		case 1:
 			// only accept one host to talk to
 		default:
 			return errors.New("Please specify only one -H")
+		}
+
+		defaultHost := opts.DefaultTCPHost
+		if clientFlags.Common.TLSOptions != nil {
+			defaultHost = opts.DefaultTLSHost
+		}
+
+		var e error
+		if hosts[0], e = opts.ParseHost(defaultHost, hosts[0]); e != nil {
+			return e
 		}
 
 		protoAddrParts := strings.SplitN(hosts[0], "://", 2)

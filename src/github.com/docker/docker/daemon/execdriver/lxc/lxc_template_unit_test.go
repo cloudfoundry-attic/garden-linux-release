@@ -34,6 +34,7 @@ func TestLXCConfig(t *testing.T) {
 		memMin = 33554432
 		memMax = 536870912
 		mem    = memMin + r.Intn(memMax-memMin)
+		swap   = memMax
 		cpuMin = 100
 		cpuMax = 10000
 		cpu    = cpuMin + r.Intn(cpuMax-cpuMin)
@@ -46,12 +47,12 @@ func TestLXCConfig(t *testing.T) {
 	command := &execdriver.Command{
 		ID: "1",
 		Resources: &execdriver.Resources{
-			Memory:    int64(mem),
-			CpuShares: int64(cpu),
+			Memory:     int64(mem),
+			MemorySwap: int64(swap),
+			CPUShares:  int64(cpu),
 		},
 		Network: &execdriver.Network{
-			Mtu:       1500,
-			Interface: nil,
+			Mtu: 1500,
 		},
 		AllowedDevices: make([]*configs.Device, 0),
 		ProcessConfig:  execdriver.ProcessConfig{},
@@ -64,7 +65,7 @@ func TestLXCConfig(t *testing.T) {
 		fmt.Sprintf("lxc.cgroup.memory.limit_in_bytes = %d", mem))
 
 	grepFile(t, p,
-		fmt.Sprintf("lxc.cgroup.memory.memsw.limit_in_bytes = %d", mem*2))
+		fmt.Sprintf("lxc.cgroup.memory.memsw.limit_in_bytes = %d", swap))
 }
 
 func TestCustomLxcConfig(t *testing.T) {
@@ -90,8 +91,7 @@ func TestCustomLxcConfig(t *testing.T) {
 			"lxc.cgroup.cpuset.cpus = 0,1",
 		},
 		Network: &execdriver.Network{
-			Mtu:       1500,
-			Interface: nil,
+			Mtu: 1500,
 		},
 		ProcessConfig: processConfig,
 	}
@@ -222,8 +222,7 @@ func TestCustomLxcConfigMounts(t *testing.T) {
 			"lxc.cgroup.cpuset.cpus = 0,1",
 		},
 		Network: &execdriver.Network{
-			Mtu:       1500,
-			Interface: nil,
+			Mtu: 1500,
 		},
 		Mounts:        mounts,
 		ProcessConfig: processConfig,
@@ -264,8 +263,7 @@ func TestCustomLxcConfigMisc(t *testing.T) {
 			"lxc.cgroup.cpuset.cpus = 0,1",
 		},
 		Network: &execdriver.Network{
-			Mtu:       1500,
-			Interface: nil,
+			Mtu: 1500,
 		},
 		ProcessConfig:   processConfig,
 		CapAdd:          []string{"net_admin", "syslog"},
@@ -317,8 +315,7 @@ func TestCustomLxcConfigMiscOverride(t *testing.T) {
 			"lxc.network.ipv4 = 172.0.0.1",
 		},
 		Network: &execdriver.Network{
-			Mtu:       1500,
-			Interface: nil,
+			Mtu: 1500,
 		},
 		ProcessConfig: processConfig,
 		CapAdd:        []string{"NET_ADMIN", "SYSLOG"},

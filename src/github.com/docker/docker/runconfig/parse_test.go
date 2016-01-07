@@ -113,31 +113,31 @@ func TestParseRunVolumes(t *testing.T) {
 	}
 
 	if _, hostConfig := mustParse(t, "-v /hostTmp:/containerTmp"); hostConfig.Binds == nil || hostConfig.Binds[0] != "/hostTmp:/containerTmp" {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp` should mount-bind /hostTmp into /containeTmp. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp` should mount-bind /hostTmp into /containerTmp. Received %v", hostConfig.Binds)
 	}
 
 	if _, hostConfig := mustParse(t, "-v /hostTmp:/containerTmp -v /hostVar:/containerVar"); hostConfig.Binds == nil || compareRandomizedStrings(hostConfig.Binds[0], hostConfig.Binds[1], "/hostTmp:/containerTmp", "/hostVar:/containerVar") != nil {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp -v /hostVar:/containerVar` should mount-bind /hostTmp into /containeTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp -v /hostVar:/containerVar` should mount-bind /hostTmp into /containerTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
 	}
 
 	if _, hostConfig := mustParse(t, "-v /hostTmp:/containerTmp:ro -v /hostVar:/containerVar:rw"); hostConfig.Binds == nil || compareRandomizedStrings(hostConfig.Binds[0], hostConfig.Binds[1], "/hostTmp:/containerTmp:ro", "/hostVar:/containerVar:rw") != nil {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:ro -v /hostVar:/containerVar:rw` should mount-bind /hostTmp into /containeTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:ro -v /hostVar:/containerVar:rw` should mount-bind /hostTmp into /containerTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
 	}
 
 	if _, hostConfig := mustParse(t, "-v /containerTmp:ro -v /containerVar:rw"); hostConfig.Binds == nil || compareRandomizedStrings(hostConfig.Binds[0], hostConfig.Binds[1], "/containerTmp:ro", "/containerVar:rw") != nil {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:ro -v /hostVar:/containerVar:rw` should mount-bind /hostTmp into /containeTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /containerTmp:ro -v /containerVar:rw` should mount-bind /containerTmp into /ro and /containerVar into /rw. Received %v", hostConfig.Binds)
 	}
 
 	if _, hostConfig := mustParse(t, "-v /hostTmp:/containerTmp:ro,Z -v /hostVar:/containerVar:rw,Z"); hostConfig.Binds == nil || compareRandomizedStrings(hostConfig.Binds[0], hostConfig.Binds[1], "/hostTmp:/containerTmp:ro,Z", "/hostVar:/containerVar:rw,Z") != nil {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:ro,Z -v /hostVar:/containerVar:rw,Z` should mount-bind /hostTmp into /containeTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:ro,Z -v /hostVar:/containerVar:rw,Z` should mount-bind /hostTmp into /containerTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
 	}
 
 	if _, hostConfig := mustParse(t, "-v /hostTmp:/containerTmp:Z -v /hostVar:/containerVar:z"); hostConfig.Binds == nil || compareRandomizedStrings(hostConfig.Binds[0], hostConfig.Binds[1], "/hostTmp:/containerTmp:Z", "/hostVar:/containerVar:z") != nil {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:Z -v /hostVar:/containerVar:z` should mount-bind /hostTmp into /containeTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp:Z -v /hostVar:/containerVar:z` should mount-bind /hostTmp into /containerTmp and /hostVar into /hostContainer. Received %v", hostConfig.Binds)
 	}
 
 	if config, hostConfig := mustParse(t, "-v /hostTmp:/containerTmp -v /containerVar"); hostConfig.Binds == nil || len(hostConfig.Binds) > 1 || hostConfig.Binds[0] != "/hostTmp:/containerTmp" {
-		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp -v /containerVar` should mount-bind only /hostTmp into /containeTmp. Received %v", hostConfig.Binds)
+		t.Fatalf("Error parsing volume flags, `-v /hostTmp:/containerTmp -v /containerVar` should mount-bind only /hostTmp into /containerTmp. Received %v", hostConfig.Binds)
 	} else if _, exists := config.Volumes["/containerVar"]; !exists {
 		t.Fatalf("Error parsing volume flags, `-v /containerVar` is missing from volumes. Received %v", config.Volumes)
 	}
@@ -202,77 +202,6 @@ func TestParseLxcConfOpt(t *testing.T) {
 		}
 	}
 
-}
-
-func TestNetHostname(t *testing.T) {
-	if _, _, _, err := parseRun([]string{"-h=name", "img", "cmd"}); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	if _, _, _, err := parseRun([]string{"--net=host", "img", "cmd"}); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	if _, _, _, err := parseRun([]string{"-h=name", "--net=bridge", "img", "cmd"}); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	if _, _, _, err := parseRun([]string{"-h=name", "--net=none", "img", "cmd"}); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	if _, _, _, err := parseRun([]string{"-h=name", "--net=host", "img", "cmd"}); err != ErrConflictNetworkHostname {
-		t.Fatalf("Expected error ErrConflictNetworkHostname, got: %s", err)
-	}
-
-	if _, _, _, err := parseRun([]string{"-h=name", "--net=container:other", "img", "cmd"}); err != ErrConflictNetworkHostname {
-		t.Fatalf("Expected error ErrConflictNetworkHostname, got: %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container", "img", "cmd"}); err == nil || err.Error() != "--net: invalid net mode: invalid container format container:<name|id>" {
-		t.Fatalf("Expected error with --net=container, got : %v", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=weird", "img", "cmd"}); err == nil || err.Error() != "--net: invalid net mode: invalid --net: weird" {
-		t.Fatalf("Expected error with --net=weird, got: %s", err)
-	}
-}
-
-func TestConflictContainerNetworkAndLinks(t *testing.T) {
-	if _, _, _, err := parseRun([]string{"--net=container:other", "--link=zip:zap", "img", "cmd"}); err != ErrConflictContainerNetworkAndLinks {
-		t.Fatalf("Expected error ErrConflictContainerNetworkAndLinks, got: %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=host", "--link=zip:zap", "img", "cmd"}); err != ErrConflictHostNetworkAndLinks {
-		t.Fatalf("Expected error ErrConflictHostNetworkAndLinks, got: %s", err)
-	}
-}
-
-func TestConflictNetworkModeAndOptions(t *testing.T) {
-	if _, _, _, err := parseRun([]string{"--net=host", "--dns=8.8.8.8", "img", "cmd"}); err != ErrConflictNetworkAndDns {
-		t.Fatalf("Expected error ErrConflictNetworkAndDns, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container:other", "--dns=8.8.8.8", "img", "cmd"}); err != ErrConflictNetworkAndDns {
-		t.Fatalf("Expected error ErrConflictNetworkAndDns, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=host", "--add-host=name:8.8.8.8", "img", "cmd"}); err != ErrConflictNetworkHosts {
-		t.Fatalf("Expected error ErrConflictNetworkAndDns, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container:other", "--add-host=name:8.8.8.8", "img", "cmd"}); err != ErrConflictNetworkHosts {
-		t.Fatalf("Expected error ErrConflictNetworkAndDns, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=host", "--mac-address=92:d0:c6:0a:29:33", "img", "cmd"}); err != ErrConflictContainerNetworkAndMac {
-		t.Fatalf("Expected error ErrConflictContainerNetworkAndMac, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container:other", "--mac-address=92:d0:c6:0a:29:33", "img", "cmd"}); err != ErrConflictContainerNetworkAndMac {
-		t.Fatalf("Expected error ErrConflictContainerNetworkAndMac, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container:other", "-P", "img", "cmd"}); err != ErrConflictNetworkPublishPorts {
-		t.Fatalf("Expected error ErrConflictNetworkPublishPorts, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container:other", "-p", "8080", "img", "cmd"}); err != ErrConflictNetworkPublishPorts {
-		t.Fatalf("Expected error ErrConflictNetworkPublishPorts, got %s", err)
-	}
-	if _, _, _, err := parseRun([]string{"--net=container:other", "--expose", "8000-9000", "img", "cmd"}); err != ErrConflictNetworkExposePorts {
-		t.Fatalf("Expected error ErrConflictNetworkExposePorts, got %s", err)
-	}
 }
 
 // Simple parse with MacAddress validatation
@@ -388,15 +317,20 @@ func TestParseDevice(t *testing.T) {
 			PathInContainer:   "/dev/snd",
 			CgroupPermissions: "rwm",
 		},
+		"/dev/snd:rw": {
+			PathOnHost:        "/dev/snd",
+			PathInContainer:   "/dev/snd",
+			CgroupPermissions: "rw",
+		},
 		"/dev/snd:/something": {
 			PathOnHost:        "/dev/snd",
 			PathInContainer:   "/something",
 			CgroupPermissions: "rwm",
 		},
-		"/dev/snd:/something:ro": {
+		"/dev/snd:/something:rw": {
 			PathOnHost:        "/dev/snd",
 			PathInContainer:   "/something",
-			CgroupPermissions: "ro",
+			CgroupPermissions: "rw",
 		},
 	}
 	for device, deviceMapping := range valids {
@@ -552,7 +486,7 @@ func TestParseEntryPoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.Entrypoint.Len() != 1 && config.Entrypoint.parts[0] != "anything" {
+	if config.Entrypoint.Len() != 1 && config.Entrypoint.Slice()[0] != "anything" {
 		t.Fatalf("Expected entrypoint 'anything', got %v", config.Entrypoint)
 	}
 }

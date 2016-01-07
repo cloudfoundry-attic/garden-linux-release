@@ -11,12 +11,14 @@ import (
 	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/pkg/system"
 
-	_ "github.com/docker/docker/daemon/execdriver/lxc"
 	_ "github.com/docker/docker/daemon/execdriver/native"
 )
 
-func setPlatformServerConfig(serverConfig *apiserver.ServerConfig, daemonCfg *daemon.Config) *apiserver.ServerConfig {
+func setPlatformServerConfig(serverConfig *apiserver.Config, daemonCfg *daemon.Config) *apiserver.Config {
 	serverConfig.SocketGroup = daemonCfg.SocketGroup
+	serverConfig.EnableCors = daemonCfg.EnableCors
+	serverConfig.CorsHeaders = daemonCfg.CorsHeaders
+
 	return serverConfig
 }
 
@@ -24,7 +26,7 @@ func setPlatformServerConfig(serverConfig *apiserver.ServerConfig, daemonCfg *da
 // file.
 func currentUserIsOwner(f string) bool {
 	if fileInfo, err := system.Stat(f); err == nil && fileInfo != nil {
-		if int(fileInfo.Uid()) == os.Getuid() {
+		if int(fileInfo.UID()) == os.Getuid() {
 			return true
 		}
 	}
@@ -41,4 +43,8 @@ func setDefaultUmask() error {
 	}
 
 	return nil
+}
+
+func getDaemonConfDir() string {
+	return "/etc/docker"
 }

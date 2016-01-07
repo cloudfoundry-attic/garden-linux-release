@@ -185,7 +185,7 @@ func TestGetRemoteImageJSON(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertEqual(t, size, 154, "Expected size 154")
+	assertEqual(t, size, int64(154), "Expected size 154")
 	if len(json) <= 0 {
 		t.Fatal("Expected non-empty json")
 	}
@@ -677,6 +677,35 @@ func TestNewIndexInfo(t *testing.T) {
 	testIndexInfo(config, expectedIndexInfos)
 }
 
+func TestMirrorEndpointLookup(t *testing.T) {
+	containsMirror := func(endpoints []APIEndpoint) bool {
+		for _, pe := range endpoints {
+			if pe.URL == "my.mirror" {
+				return true
+			}
+		}
+		return false
+	}
+	s := Service{Config: makeServiceConfig([]string{"my.mirror"}, nil)}
+	imageName := IndexName + "/test/image"
+
+	pushAPIEndpoints, err := s.LookupPushEndpoints(imageName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if containsMirror(pushAPIEndpoints) {
+		t.Fatal("Push endpoint should not contain mirror")
+	}
+
+	pullAPIEndpoints, err := s.LookupPullEndpoints(imageName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !containsMirror(pullAPIEndpoints) {
+		t.Fatal("Pull endpoint should contain mirror")
+	}
+}
+
 func TestPushRegistryTag(t *testing.T) {
 	r := spawnTestRegistrySession(t)
 	err := r.PushRegistryTag("foo42/bar", imageID, "stable", makeURL("/v1/"))
@@ -738,6 +767,9 @@ func TestValidRemoteName(t *testing.T) {
 		// Allow embedded hyphens.
 		"docker-rules/docker",
 
+		// Allow multiple hyphens as well.
+		"docker---rules/docker",
+
 		//Username doc and image name docker being tested.
 		"doc/docker",
 
@@ -771,8 +803,11 @@ func TestValidRemoteName(t *testing.T) {
 
 		"_docker/_docker",
 
-		// Disallow consecutive hyphens.
-		"dock--er/docker",
+		// Disallow consecutive underscores and periods.
+		"dock__er/docker",
+		"dock..er/docker",
+		"dock_.er/docker",
+		"dock-.er/docker",
 
 		// No repository.
 		"docker/",

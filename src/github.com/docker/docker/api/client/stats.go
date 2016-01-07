@@ -25,6 +25,8 @@ type containerStats struct {
 	MemoryPercentage float64
 	NetworkRx        float64
 	NetworkTx        float64
+	BlockRead        float64
+	BlockWrite       float64
 	mu               sync.RWMutex
 	err              error
 }
@@ -54,25 +56,33 @@ func (s *containerStats) Collect(cli *DockerCli, streamStats bool) {
 	)
 	go func() {
 		for {
-			var v *types.Stats
+			var v *types.StatsJSON
 			if err := dec.Decode(&v); err != nil {
 				u <- err
 				return
 			}
-			var (
+
+			var memPercent = 0.0
+			var cpuPercent = 0.0
+
+			// MemoryStats.Limit will never be 0 unless the container is not running and we havn't
+			// got any data from cgroup
+			if v.MemoryStats.Limit != 0 {
 				memPercent = float64(v.MemoryStats.Usage) / float64(v.MemoryStats.Limit) * 100.0
-				cpuPercent = 0.0
-			)
-			previousCPU = v.PreCpuStats.CpuUsage.TotalUsage
-			previousSystem = v.PreCpuStats.SystemUsage
+			}
+
+			previousCPU = v.PreCPUStats.CPUUsage.TotalUsage
+			previousSystem = v.PreCPUStats.SystemUsage
 			cpuPercent = calculateCPUPercent(previousCPU, previousSystem, v)
+			blkRead, blkWrite := calculateBlockIO(v.BlkioStats)
 			s.mu.Lock()
 			s.CPUPercentage = cpuPercent
 			s.Memory = float64(v.MemoryStats.Usage)
 			s.MemoryLimit = float64(v.MemoryStats.Limit)
 			s.MemoryPercentage = memPercent
-			s.NetworkRx = float64(v.Network.RxBytes)
-			s.NetworkTx = float64(v.Network.TxBytes)
+			s.NetworkRx, s.NetworkTx = calculateNetwork(v.Networks)
+			s.BlockRead = float64(blkRead)
+			s.BlockWrite = float64(blkWrite)
 			s.mu.Unlock()
 			u <- nil
 			if !streamStats {
@@ -89,6 +99,11 @@ func (s *containerStats) Collect(cli *DockerCli, streamStats bool) {
 			s.CPUPercentage = 0
 			s.Memory = 0
 			s.MemoryPercentage = 0
+			s.MemoryLimit = 0
+			s.NetworkRx = 0
+			s.NetworkTx = 0
+			s.BlockRead = 0
+			s.BlockWrite = 0
 			s.mu.Unlock()
 		case err := <-u:
 			if err != nil {
@@ -110,12 +125,13 @@ func (s *containerStats) Display(w io.Writer) error {
 	if s.err != nil {
 		return s.err
 	}
-	fmt.Fprintf(w, "%s\t%.2f%%\t%s/%s\t%.2f%%\t%s/%s\n",
+	fmt.Fprintf(w, "%s\t%.2f%%\t%s / %s\t%.2f%%\t%s / %s\t%s / %s\n",
 		s.Name,
 		s.CPUPercentage,
 		units.HumanSize(s.Memory), units.HumanSize(s.MemoryLimit),
 		s.MemoryPercentage,
-		units.HumanSize(s.NetworkRx), units.HumanSize(s.NetworkTx))
+		units.HumanSize(s.NetworkRx), units.HumanSize(s.NetworkTx),
+		units.HumanSize(s.BlockRead), units.HumanSize(s.BlockWrite))
 	return nil
 }
 
@@ -125,7 +141,7 @@ func (s *containerStats) Display(w io.Writer) error {
 //
 // Usage: docker stats CONTAINER [CONTAINER...]
 func (cli *DockerCli) CmdStats(args ...string) error {
-	cmd := Cli.Subcmd("stats", []string{"CONTAINER [CONTAINER...]"}, "Display a live stream of one or more containers' resource usage statistics", true)
+	cmd := Cli.Subcmd("stats", []string{"CONTAINER [CONTAINER...]"}, Cli.DockerCommands["stats"].Description, true)
 	noStream := cmd.Bool([]string{"-no-stream"}, false, "Disable streaming stats and only pull the first result")
 	cmd.Require(flag.Min, 1)
 
@@ -142,7 +158,7 @@ func (cli *DockerCli) CmdStats(args ...string) error {
 			fmt.Fprint(cli.out, "\033[2J")
 			fmt.Fprint(cli.out, "\033[H")
 		}
-		io.WriteString(w, "CONTAINER\tCPU %\tMEM USAGE/LIMIT\tMEM %\tNET I/O\n")
+		io.WriteString(w, "CONTAINER\tCPU %\tMEM USAGE / LIMIT\tMEM %\tNET I/O\tBLOCK I/O\n")
 	}
 	for _, n := range names {
 		s := &containerStats{Name: n}
@@ -186,17 +202,39 @@ func (cli *DockerCli) CmdStats(args ...string) error {
 	return nil
 }
 
-func calculateCPUPercent(previousCPU, previousSystem uint64, v *types.Stats) float64 {
+func calculateCPUPercent(previousCPU, previousSystem uint64, v *types.StatsJSON) float64 {
 	var (
 		cpuPercent = 0.0
 		// calculate the change for the cpu usage of the container in between readings
-		cpuDelta = float64(v.CpuStats.CpuUsage.TotalUsage - previousCPU)
+		cpuDelta = float64(v.CPUStats.CPUUsage.TotalUsage - previousCPU)
 		// calculate the change for the entire system between readings
-		systemDelta = float64(v.CpuStats.SystemUsage - previousSystem)
+		systemDelta = float64(v.CPUStats.SystemUsage - previousSystem)
 	)
 
 	if systemDelta > 0.0 && cpuDelta > 0.0 {
-		cpuPercent = (cpuDelta / systemDelta) * float64(len(v.CpuStats.CpuUsage.PercpuUsage)) * 100.0
+		cpuPercent = (cpuDelta / systemDelta) * float64(len(v.CPUStats.CPUUsage.PercpuUsage)) * 100.0
 	}
 	return cpuPercent
+}
+
+func calculateBlockIO(blkio types.BlkioStats) (blkRead uint64, blkWrite uint64) {
+	for _, bioEntry := range blkio.IoServiceBytesRecursive {
+		switch strings.ToLower(bioEntry.Op) {
+		case "read":
+			blkRead = blkRead + bioEntry.Value
+		case "write":
+			blkWrite = blkWrite + bioEntry.Value
+		}
+	}
+	return
+}
+
+func calculateNetwork(network map[string]types.NetworkStats) (float64, float64) {
+	var rx, tx float64
+
+	for _, v := range network {
+		rx += float64(v.RxBytes)
+		tx += float64(v.TxBytes)
+	}
+	return rx, tx
 }

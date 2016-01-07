@@ -9,6 +9,7 @@ import (
 )
 
 func (s *DockerSuite) TestKillContainer(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
 	cleanedContainerID := strings.TrimSpace(out)
 	c.Assert(waitRun(cleanedContainerID), check.IsNil)
@@ -22,16 +23,18 @@ func (s *DockerSuite) TestKillContainer(c *check.C) {
 }
 
 func (s *DockerSuite) TestKillofStoppedContainer(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
 	cleanedContainerID := strings.TrimSpace(out)
 
 	dockerCmd(c, "stop", cleanedContainerID)
 
-	_, _, err := dockerCmdWithError(c, "kill", "-s", "30", cleanedContainerID)
+	_, _, err := dockerCmdWithError("kill", "-s", "30", cleanedContainerID)
 	c.Assert(err, check.Not(check.IsNil), check.Commentf("Container %s is not running", cleanedContainerID))
 }
 
 func (s *DockerSuite) TestKillDifferentUserContainer(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	out, _ := dockerCmd(c, "run", "-u", "daemon", "-d", "busybox", "top")
 	cleanedContainerID := strings.TrimSpace(out)
 	c.Assert(waitRun(cleanedContainerID), check.IsNil)
@@ -46,6 +49,7 @@ func (s *DockerSuite) TestKillDifferentUserContainer(c *check.C) {
 
 // regression test about correct signal parsing see #13665
 func (s *DockerSuite) TestKillWithSignal(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
 	cid := strings.TrimSpace(out)
 	c.Assert(waitRun(cid), check.IsNil)
@@ -59,11 +63,12 @@ func (s *DockerSuite) TestKillWithSignal(c *check.C) {
 }
 
 func (s *DockerSuite) TestKillWithInvalidSignal(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
 	cid := strings.TrimSpace(out)
 	c.Assert(waitRun(cid), check.IsNil)
 
-	out, _, err := dockerCmdWithError(c, "kill", "-s", "0", cid)
+	out, _, err := dockerCmdWithError("kill", "-s", "0", cid)
 	c.Assert(err, check.NotNil)
 	if !strings.ContainsAny(out, "Invalid signal: 0") {
 		c.Fatal("Kill with an invalid signal didn't error out correctly")
@@ -78,7 +83,7 @@ func (s *DockerSuite) TestKillWithInvalidSignal(c *check.C) {
 	cid = strings.TrimSpace(out)
 	c.Assert(waitRun(cid), check.IsNil)
 
-	out, _, err = dockerCmdWithError(c, "kill", "-s", "SIG42", cid)
+	out, _, err = dockerCmdWithError("kill", "-s", "SIG42", cid)
 	c.Assert(err, check.NotNil)
 	if !strings.ContainsAny(out, "Invalid signal: SIG42") {
 		c.Fatal("Kill with an invalid signal error out correctly")
@@ -90,7 +95,8 @@ func (s *DockerSuite) TestKillWithInvalidSignal(c *check.C) {
 	}
 }
 
-func (s *DockerSuite) TestKillofStoppedContainerAPIPre120(c *check.C) {
+func (s *DockerSuite) TestKillStoppedContainerAPIPre120(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	dockerCmd(c, "run", "--name", "docker-kill-test-api", "-d", "busybox", "top")
 	dockerCmd(c, "stop", "docker-kill-test-api")
 

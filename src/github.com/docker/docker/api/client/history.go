@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 //
 // Usage: docker history [OPTIONS] IMAGE
 func (cli *DockerCli) CmdHistory(args ...string) error {
-	cmd := Cli.Subcmd("history", []string{"IMAGE"}, "Show the history of an image", true)
+	cmd := Cli.Subcmd("history", []string{"IMAGE"}, Cli.DockerCommands["history"].Description, true)
 	human := cmd.Bool([]string{"H", "-human"}, true, "Print sizes and dates in human readable format")
 	quiet := cmd.Bool([]string{"q", "-quiet"}, false, "Only show numeric IDs")
 	noTrunc := cmd.Bool([]string{"#notrunc", "-no-trunc"}, false, "Don't truncate output")
@@ -57,9 +58,9 @@ func (cli *DockerCli) CmdHistory(args ...string) error {
 			}
 
 			if *noTrunc {
-				fmt.Fprintf(w, "%s\t", entry.CreatedBy)
+				fmt.Fprintf(w, "%s\t", strings.Replace(entry.CreatedBy, "\t", " ", -1))
 			} else {
-				fmt.Fprintf(w, "%s\t", stringutils.Truncate(entry.CreatedBy, 45))
+				fmt.Fprintf(w, "%s\t", stringutils.Truncate(strings.Replace(entry.CreatedBy, "\t", " ", -1), 45))
 			}
 
 			if *human {

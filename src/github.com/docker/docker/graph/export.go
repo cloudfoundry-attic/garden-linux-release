@@ -2,29 +2,26 @@ package graph
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/distribution/digest"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/parsers"
 	"github.com/docker/docker/registry"
 )
 
-// CmdImageExport exports all images with the given tag. All versions
-// containing the same tag are exported. The resulting output is an
-// uncompressed tar ball.
-// name is the set of tags to export.
-// out is the writer where the images are written to.
-type ImageExportConfig struct {
-	Names     []string
-	Outstream io.Writer
-}
-
-func (s *TagStore) ImageExport(imageExportConfig *ImageExportConfig) error {
-
+// ImageExport exports list of images to a output stream specified in the
+// config. The exported images are archived into a tar when written to the
+// output stream. All images with the given tag and all versions containing the
+// same tag are exported. names is the set of tags to export, and outStream
+// is the writer which the images are written to.
+func (s *TagStore) ImageExport(names []string, outStream io.Writer) error {
 	// get image json
 	tempdir, err := ioutil.TempDir("", "docker-export-")
 	if err != nil {
@@ -41,7 +38,7 @@ func (s *TagStore) ImageExport(imageExportConfig *ImageExportConfig) error {
 			repo[tag] = id
 		}
 	}
-	for _, name := range imageExportConfig.Names {
+	for _, name := range names {
 		name = registry.NormalizeLocalName(name)
 		logrus.Debugf("Serializing %s", name)
 		rootRepo := s.Repositories[name]
@@ -62,6 +59,11 @@ func (s *TagStore) ImageExport(imageExportConfig *ImageExportConfig) error {
 			if img != nil {
 				// This is a named image like 'busybox:latest'
 				repoName, repoTag := parsers.ParseRepositoryTag(name)
+
+				// Skip digests on save
+				if _, err := digest.ParseDigest(repoTag); err == nil {
+					repoTag = ""
+				}
 
 				// check this length, because a lookup of a truncated has will not have a tag
 				// and will not need to be added to this map
@@ -94,6 +96,9 @@ func (s *TagStore) ImageExport(imageExportConfig *ImageExportConfig) error {
 		if err := f.Close(); err != nil {
 			return err
 		}
+		if err := os.Chtimes(filepath.Join(tempdir, "repositories"), time.Unix(0, 0), time.Unix(0, 0)); err != nil {
+			return err
+		}
 	} else {
 		logrus.Debugf("There were no repositories to write")
 	}
@@ -104,17 +109,19 @@ func (s *TagStore) ImageExport(imageExportConfig *ImageExportConfig) error {
 	}
 	defer fs.Close()
 
-	if _, err := io.Copy(imageExportConfig.Outstream, fs); err != nil {
+	if _, err := io.Copy(outStream, fs); err != nil {
 		return err
 	}
 	logrus.Debugf("End export image")
 	return nil
 }
 
-// FIXME: this should be a top-level function, not a class method
 func (s *TagStore) exportImage(name, tempdir string) error {
 	for n := name; n != ""; {
 		img, err := s.LookupImage(n)
+		if err != nil || img == nil {
+			return fmt.Errorf("No such image %s", n)
+		}
 
 		// temporary directory
 		tmpImageDir := filepath.Join(tempdir, n)
@@ -160,6 +167,13 @@ func (s *TagStore) exportImage(name, tempdir string) error {
 			return err
 		}
 
+		for _, fname := range []string{"", "VERSION", "json", "layer.tar"} {
+			if err := os.Chtimes(filepath.Join(tmpImageDir, fname), img.Created, img.Created); err != nil {
+				return err
+			}
+		}
+
+		// try again with parent
 		n = img.Parent
 	}
 	return nil

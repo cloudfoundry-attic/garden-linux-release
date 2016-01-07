@@ -2,13 +2,16 @@ package main
 
 import (
 	"archive/tar"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/docker/docker/image"
 	"github.com/go-check/check"
 )
 
@@ -23,7 +26,7 @@ func (s *DockerRegistrySuite) TestPushBusyboxImage(c *check.C) {
 
 // pushing an image without a prefix should throw an error
 func (s *DockerSuite) TestPushUnprefixedRepo(c *check.C) {
-	if out, _, err := dockerCmdWithError(c, "push", "busybox"); err == nil {
+	if out, _, err := dockerCmdWithError("push", "busybox"); err == nil {
 		c.Fatalf("pushing an unprefixed repo didn't result in a non-zero exit status: %s", out)
 	}
 }
@@ -32,7 +35,7 @@ func (s *DockerRegistrySuite) TestPushUntagged(c *check.C) {
 	repoName := fmt.Sprintf("%v/dockercli/busybox", privateRegistryURL)
 
 	expected := "Repository does not exist"
-	if out, _, err := dockerCmdWithError(c, "push", repoName); err == nil {
+	if out, _, err := dockerCmdWithError("push", repoName); err == nil {
 		c.Fatalf("pushing the image to the private registry should have failed: output %q", out)
 	} else if !strings.Contains(out, expected) {
 		c.Fatalf("pushing the image failed with an unexpected message: expected %q, got %q", expected, out)
@@ -44,7 +47,7 @@ func (s *DockerRegistrySuite) TestPushBadTag(c *check.C) {
 
 	expected := "does not exist"
 
-	if out, _, err := dockerCmdWithError(c, "push", repoName); err == nil {
+	if out, _, err := dockerCmdWithError("push", repoName); err == nil {
 		c.Fatalf("pushing the image to the private registry should have failed: output %q", out)
 	} else if !strings.Contains(out, expected) {
 		c.Fatalf("pushing the image failed with an unexpected message: expected %q, got %q", expected, out)
@@ -97,31 +100,44 @@ func (s *DockerRegistrySuite) TestPushMultipleTags(c *check.C) {
 	}
 }
 
-func (s *DockerRegistrySuite) TestPushInterrupt(c *check.C) {
-	repoName := fmt.Sprintf("%v/dockercli/busybox", privateRegistryURL)
-	// tag the image and upload it to the private registry
-	dockerCmd(c, "tag", "busybox", repoName)
+// TestPushBadParentChain tries to push an image with a corrupted parent chain
+// in the v1compatibility files, and makes sure the push process fixes it.
+func (s *DockerRegistrySuite) TestPushBadParentChain(c *check.C) {
+	repoName := fmt.Sprintf("%v/dockercli/badparent", privateRegistryURL)
 
-	pushCmd := exec.Command(dockerBinary, "push", repoName)
-	if err := pushCmd.Start(); err != nil {
-		c.Fatalf("Failed to start pushing to private registry: %v", err)
+	id, err := buildImage(repoName, `
+	    FROM busybox
+	    CMD echo "adding another layer"
+	    `, true)
+	if err != nil {
+		c.Fatal(err)
 	}
 
-	// Interrupt push (yes, we have no idea at what point it will get killed).
-	time.Sleep(200 * time.Millisecond)
-	if err := pushCmd.Process.Kill(); err != nil {
-		c.Fatalf("Failed to kill push process: %v", err)
-	}
-	if out, _, err := dockerCmdWithError(c, "push", repoName); err == nil {
-		if !strings.Contains(out, "already in progress") {
-			c.Fatalf("Push should be continued on daemon side, but seems ok: %v, %s", err, out)
-		}
-	}
-	// now wait until all this pushes will complete
-	// if it failed with timeout - there would be some error,
-	// so no logic about it here
-	for exec.Command(dockerBinary, "push", repoName).Run() != nil {
-	}
+	// Push to create v1compatibility file
+	dockerCmd(c, "push", repoName)
+
+	// Corrupt the parent in the v1compatibility file from the top layer
+	filename := filepath.Join(dockerBasePath, "graph", id, "v1Compatibility")
+
+	jsonBytes, err := ioutil.ReadFile(filename)
+	c.Assert(err, check.IsNil, check.Commentf("Could not read v1Compatibility file: %s", err))
+
+	var img image.Image
+	err = json.Unmarshal(jsonBytes, &img)
+	c.Assert(err, check.IsNil, check.Commentf("Could not unmarshal json: %s", err))
+
+	img.Parent = "1234123412341234123412341234123412341234123412341234123412341234"
+
+	jsonBytes, err = json.Marshal(&img)
+	c.Assert(err, check.IsNil, check.Commentf("Could not marshal json: %s", err))
+
+	err = ioutil.WriteFile(filename, jsonBytes, 0600)
+	c.Assert(err, check.IsNil, check.Commentf("Could not write v1Compatibility file: %s", err))
+
+	dockerCmd(c, "push", repoName)
+
+	// pull should succeed
+	dockerCmd(c, "pull", repoName)
 }
 
 func (s *DockerRegistrySuite) TestPushEmptyLayer(c *check.C) {
@@ -148,7 +164,7 @@ func (s *DockerRegistrySuite) TestPushEmptyLayer(c *check.C) {
 	}
 
 	// Now verify we can push it
-	if out, _, err := dockerCmdWithError(c, "push", repoName); err != nil {
+	if out, _, err := dockerCmdWithError("push", repoName); err != nil {
 		c.Fatalf("pushing the image to the private registry has failed: %s, %v", out, err)
 	}
 }
@@ -169,19 +185,53 @@ func (s *DockerTrustSuite) TestTrustedPush(c *check.C) {
 	}
 }
 
+func (s *DockerTrustSuite) TestTrustedPushWithEnvPasswords(c *check.C) {
+	repoName := fmt.Sprintf("%v/dockercli/trusted:latest", privateRegistryURL)
+	// tag the image and upload it to the private registry
+	dockerCmd(c, "tag", "busybox", repoName)
+
+	pushCmd := exec.Command(dockerBinary, "push", repoName)
+	s.trustedCmdWithPassphrases(pushCmd, "12345678", "12345678")
+	out, _, err := runCommandWithOutput(pushCmd)
+	if err != nil {
+		c.Fatalf("Error running trusted push: %s\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "Signing and pushing trust metadata") {
+		c.Fatalf("Missing expected output on trusted push:\n%s", out)
+	}
+}
+
+// This test ensures backwards compatibility with old ENV variables. Should be
+// deprecated by 1.10
+func (s *DockerTrustSuite) TestTrustedPushWithDeprecatedEnvPasswords(c *check.C) {
+	repoName := fmt.Sprintf("%v/dockercli/trusteddeprecated:latest", privateRegistryURL)
+	// tag the image and upload it to the private registry
+	dockerCmd(c, "tag", "busybox", repoName)
+
+	pushCmd := exec.Command(dockerBinary, "push", repoName)
+	s.trustedCmdWithDeprecatedEnvPassphrases(pushCmd, "12345678", "12345678")
+	out, _, err := runCommandWithOutput(pushCmd)
+	if err != nil {
+		c.Fatalf("Error running trusted push: %s\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "Signing and pushing trust metadata") {
+		c.Fatalf("Missing expected output on trusted push:\n%s", out)
+	}
+}
+
 func (s *DockerTrustSuite) TestTrustedPushWithFaillingServer(c *check.C) {
 	repoName := fmt.Sprintf("%v/dockercli/trusted:latest", privateRegistryURL)
 	// tag the image and upload it to the private registry
 	dockerCmd(c, "tag", "busybox", repoName)
 
 	pushCmd := exec.Command(dockerBinary, "push", repoName)
-	s.trustedCmdWithServer(pushCmd, "example/")
+	s.trustedCmdWithServer(pushCmd, "https://example.com:81/")
 	out, _, err := runCommandWithOutput(pushCmd)
 	if err == nil {
 		c.Fatalf("Missing error while running trusted push w/ no server")
 	}
 
-	if !strings.Contains(string(out), "Error establishing connection to notary repository") {
+	if !strings.Contains(string(out), "error contacting notary server") {
 		c.Fatalf("Missing expected output on trusted push:\n%s", out)
 	}
 }
@@ -192,7 +242,7 @@ func (s *DockerTrustSuite) TestTrustedPushWithoutServerAndUntrusted(c *check.C) 
 	dockerCmd(c, "tag", "busybox", repoName)
 
 	pushCmd := exec.Command(dockerBinary, "push", "--disable-content-trust", repoName)
-	s.trustedCmdWithServer(pushCmd, "example/")
+	s.trustedCmdWithServer(pushCmd, "https://example.com/")
 	out, _, err := runCommandWithOutput(pushCmd)
 	if err != nil {
 		c.Fatalf("trusted push with no server and --disable-content-trust failed: %s\n%s", err, out)
@@ -285,6 +335,38 @@ func (s *DockerTrustSuite) TestTrustedPushWithIncorrectPassphraseForNonRoot(c *c
 	// Push with wrong passphrases
 	pushCmd = exec.Command(dockerBinary, "push", repoName)
 	s.trustedCmdWithPassphrases(pushCmd, "12345678", "87654321")
+	out, _, err = runCommandWithOutput(pushCmd)
+	if err == nil {
+		c.Fatalf("Error missing from trusted push with short targets passphrase: \n%s", out)
+	}
+
+	if !strings.Contains(string(out), "password invalid, operation has failed") {
+		c.Fatalf("Missing expected output on trusted push with short targets/snapsnot passphrase:\n%s", out)
+	}
+}
+
+// This test ensures backwards compatibility with old ENV variables. Should be
+// deprecated by 1.10
+func (s *DockerTrustSuite) TestTrustedPushWithIncorrectDeprecatedPassphraseForNonRoot(c *check.C) {
+	repoName := fmt.Sprintf("%v/dockercliincorretdeprecatedpwd/trusted:latest", privateRegistryURL)
+	// tag the image and upload it to the private registry
+	dockerCmd(c, "tag", "busybox", repoName)
+
+	// Push with default passphrases
+	pushCmd := exec.Command(dockerBinary, "push", repoName)
+	s.trustedCmd(pushCmd)
+	out, _, err := runCommandWithOutput(pushCmd)
+	if err != nil {
+		c.Fatalf("trusted push failed: %s\n%s", err, out)
+	}
+
+	if !strings.Contains(string(out), "Signing and pushing trust metadata") {
+		c.Fatalf("Missing expected output on trusted push:\n%s", out)
+	}
+
+	// Push with wrong passphrases
+	pushCmd = exec.Command(dockerBinary, "push", repoName)
+	s.trustedCmdWithDeprecatedEnvPassphrases(pushCmd, "12345678", "87654321")
 	out, _, err = runCommandWithOutput(pushCmd)
 	if err == nil {
 		c.Fatalf("Error missing from trusted push with short targets passphrase: \n%s", out)

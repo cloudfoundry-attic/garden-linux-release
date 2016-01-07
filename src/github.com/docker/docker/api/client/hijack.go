@@ -16,7 +16,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api"
 	"github.com/docker/docker/autogen/dockerversion"
-	"github.com/docker/docker/pkg/promise"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/docker/pkg/term"
 )
@@ -156,6 +155,13 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 	req.Host = cli.addr
 
 	dial, err := cli.dial()
+	if err != nil {
+		if strings.Contains(err.Error(), "connection refused") {
+			return fmt.Errorf("Cannot connect to the Docker daemon. Is 'docker daemon' running on this host?")
+		}
+		return err
+	}
+
 	// When we set up a TCP connection for hijack, there could be long periods
 	// of inactivity (a long running command with no output) that in certain
 	// network setups may cause ECONNTIMEOUT, leaving the client in an unknown
@@ -165,12 +171,7 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 		tcpConn.SetKeepAlive(true)
 		tcpConn.SetKeepAlivePeriod(30 * time.Second)
 	}
-	if err != nil {
-		if strings.Contains(err.Error(), "connection refused") {
-			return fmt.Errorf("Cannot connect to the Docker daemon. Is 'docker -d' running on this host?")
-		}
-		return err
-	}
+
 	clientconn := httputil.NewClientConn(dial, nil)
 	defer clientconn.Close()
 
@@ -184,8 +185,6 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 		started <- rwc
 	}
 
-	var receiveStdout chan error
-
 	var oldState *term.State
 
 	if in != nil && setRawTerminal && cli.isTerminalIn && os.Getenv("NORAW") == "" {
@@ -196,19 +195,15 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 		defer term.RestoreTerminal(cli.inFd, oldState)
 	}
 
+	receiveStdout := make(chan error, 1)
 	if stdout != nil || stderr != nil {
-		receiveStdout = promise.Go(func() (err error) {
+		go func() {
 			defer func() {
 				if in != nil {
 					if setRawTerminal && cli.isTerminalIn {
 						term.RestoreTerminal(cli.inFd, oldState)
 					}
-					// For some reason this Close call blocks on darwin..
-					// As the client exists right after, simply discard the close
-					// until we find a better solution.
-					if runtime.GOOS != "darwin" {
-						in.Close()
-					}
+					in.Close()
 				}
 			}()
 
@@ -219,11 +214,12 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 				_, err = stdcopy.StdCopy(stdout, stderr, br)
 			}
 			logrus.Debugf("[hijack] End of stdout")
-			return err
-		})
+			receiveStdout <- err
+		}()
 	}
 
-	sendStdin := promise.Go(func() error {
+	stdinDone := make(chan struct{})
+	go func() {
 		if in != nil {
 			io.Copy(rwc, in)
 			logrus.Debugf("[hijack] End of stdin")
@@ -236,22 +232,23 @@ func (cli *DockerCli) hijack(method, path string, setRawTerminal bool, in io.Rea
 				logrus.Debugf("Couldn't send EOF: %s", err)
 			}
 		}
-		// Discard errors due to pipe interruption
-		return nil
-	})
+		close(stdinDone)
+	}()
 
-	if stdout != nil || stderr != nil {
-		if err := <-receiveStdout; err != nil {
+	select {
+	case err := <-receiveStdout:
+		if err != nil {
 			logrus.Debugf("Error receiveStdout: %s", err)
 			return err
 		}
-	}
-
-	if !cli.isTerminalIn {
-		if err := <-sendStdin; err != nil {
-			logrus.Debugf("Error sendStdin: %s", err)
-			return err
+	case <-stdinDone:
+		if stdout != nil || stderr != nil {
+			if err := <-receiveStdout; err != nil {
+				logrus.Debugf("Error receiveStdout: %s", err)
+				return err
+			}
 		}
 	}
+
 	return nil
 }

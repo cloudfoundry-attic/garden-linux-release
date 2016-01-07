@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/client"
@@ -36,11 +35,8 @@ func main() {
 
 		help := "\nCommands:\n"
 
-		// TODO(tiborvass): no need to sort if we ensure dockerCommands is sorted
-		sort.Sort(byName(dockerCommands))
-
 		for _, cmd := range dockerCommands {
-			help += fmt.Sprintf("    %-10.10s%s\n", cmd.name, cmd.description)
+			help += fmt.Sprintf("    %-10.10s%s\n", cmd.Name, cmd.Description)
 		}
 
 		help += "\nRun 'docker COMMAND --help' for more information on a command."
@@ -54,16 +50,16 @@ func main() {
 		return
 	}
 
-	clientCli := client.NewDockerCli(stdin, stdout, stderr, clientFlags)
-	// TODO: remove once `-d` is retired
-	handleGlobalDaemonFlag()
-
 	if *flHelp {
 		// if global flag --help is present, regardless of what other options and commands there are,
 		// just print the usage.
 		flag.Usage()
 		return
 	}
+
+	// TODO: remove once `-d` is retired
+	handleGlobalDaemonFlag()
+	clientCli := client.NewDockerCli(stdin, stdout, stderr, clientFlags)
 
 	c := cli.New(clientCli, daemonCli)
 	if err := c.Run(flag.Args()...); err != nil {

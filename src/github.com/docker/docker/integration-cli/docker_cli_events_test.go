@@ -13,19 +13,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/pkg/integration/checker"
 	"github.com/go-check/check"
 )
 
 func (s *DockerSuite) TestEventsTimestampFormats(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	image := "busybox"
 
 	// Start stopwatch, generate an event
-	time.Sleep(time.Second) // so that we don't grab events from previous test occured in the same second
+	time.Sleep(1 * time.Second) // so that we don't grab events from previous test occured in the same second
 	start := daemonTime(c)
-	time.Sleep(time.Second) // remote API precision is only a second, wait a while before creating an event
 	dockerCmd(c, "tag", image, "timestamptest:1")
 	dockerCmd(c, "rmi", "timestamptest:1")
-	time.Sleep(time.Second) // so that until > since
+	time.Sleep(1 * time.Second) // so that until > since
 	end := daemonTime(c)
 
 	// List of available time formats to --since
@@ -49,6 +50,7 @@ func (s *DockerSuite) TestEventsTimestampFormats(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsUntag(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	image := "busybox"
 	dockerCmd(c, "tag", image, "utest:tag1")
 	dockerCmd(c, "tag", image, "utest:tag2")
@@ -75,7 +77,7 @@ func (s *DockerSuite) TestEventsContainerFailStartDie(c *check.C) {
 
 	out, _ := dockerCmd(c, "images", "-q")
 	image := strings.Split(out, "\n")[0]
-	if _, _, err := dockerCmdWithError(c, "run", "--name", "testeventdie", image, "blerg"); err == nil {
+	if _, _, err := dockerCmdWithError("run", "--name", "testeventdie", image, "blerg"); err == nil {
 		c.Fatalf("Container run with command blerg should have failed, but it did not")
 	}
 
@@ -98,7 +100,7 @@ func (s *DockerSuite) TestEventsContainerFailStartDie(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsLimit(c *check.C) {
-
+	testRequires(c, DaemonIsLinux)
 	var waitGroup sync.WaitGroup
 	errChan := make(chan error, 17)
 
@@ -129,6 +131,7 @@ func (s *DockerSuite) TestEventsLimit(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsContainerEvents(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	dockerCmd(c, "run", "--rm", "busybox", "true")
 	out, _ := dockerCmd(c, "events", "--since=0", fmt.Sprintf("--until=%d", daemonTime(c).Unix()))
 	events := strings.Split(out, "\n")
@@ -144,7 +147,7 @@ func (s *DockerSuite) TestEventsContainerEvents(c *check.C) {
 	if createEvent[len(createEvent)-1] != "create" {
 		c.Fatalf("event should be create, not %#v", createEvent)
 	}
-	if attachEvent[len(createEvent)-1] != "attach" {
+	if attachEvent[len(attachEvent)-1] != "attach" {
 		c.Fatalf("event should be attach, not %#v", attachEvent)
 	}
 	if startEvent[len(startEvent)-1] != "start" {
@@ -160,6 +163,7 @@ func (s *DockerSuite) TestEventsContainerEvents(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsContainerEventsSinceUnixEpoch(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	dockerCmd(c, "run", "--rm", "busybox", "true")
 	timeBeginning := time.Unix(0, 0).Format(time.RFC3339Nano)
 	timeBeginning = strings.Replace(timeBeginning, "Z", ".000000000Z", -1)
@@ -194,6 +198,7 @@ func (s *DockerSuite) TestEventsContainerEventsSinceUnixEpoch(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsImageUntagDelete(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	name := "testimageevents"
 	_, err := buildImage(name,
 		`FROM scratch
@@ -223,7 +228,8 @@ func (s *DockerSuite) TestEventsImageUntagDelete(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsImageTag(c *check.C) {
-	time.Sleep(time.Second * 2) // because API has seconds granularity
+	testRequires(c, DaemonIsLinux)
+	time.Sleep(1 * time.Second) // because API has seconds granularity
 	since := daemonTime(c).Unix()
 	image := "testimageevents:tag"
 	dockerCmd(c, "tag", "busybox", image)
@@ -246,6 +252,7 @@ func (s *DockerSuite) TestEventsImageTag(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsImagePull(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 	testRequires(c, Network)
 
@@ -265,6 +272,7 @@ func (s *DockerSuite) TestEventsImagePull(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsImageImport(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	id := make(chan string)
@@ -313,6 +321,7 @@ func (s *DockerSuite) TestEventsImageImport(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsFilters(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	parseEvents := func(out, match string) {
 		events := strings.Split(out, "\n")
 		events = events[:len(events)-1]
@@ -343,6 +352,7 @@ func (s *DockerSuite) TestEventsFilters(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsFilterImageName(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	out, _ := dockerCmd(c, "run", "--name", "container_1", "-d", "busybox:latest", "true")
@@ -374,7 +384,67 @@ func (s *DockerSuite) TestEventsFilterImageName(c *check.C) {
 
 }
 
+func (s *DockerSuite) TestEventsFilterLabels(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+	since := daemonTime(c).Unix()
+	label := "io.docker.testing=foo"
+
+	out, _ := dockerCmd(c, "run", "-d", "-l", label, "busybox:latest", "true")
+	container1 := strings.TrimSpace(out)
+
+	out, _ = dockerCmd(c, "run", "-d", "busybox", "true")
+	container2 := strings.TrimSpace(out)
+
+	out, _ = dockerCmd(
+		c,
+		"events",
+		fmt.Sprintf("--since=%d", since),
+		fmt.Sprintf("--until=%d", daemonTime(c).Unix()),
+		"--filter", fmt.Sprintf("label=%s", label))
+
+	events := strings.Split(strings.TrimSpace(out), "\n")
+	c.Assert(len(events), checker.Equals, 3)
+
+	for _, e := range events {
+		c.Assert(e, checker.Contains, container1)
+		c.Assert(e, check.Not(checker.Contains), container2)
+	}
+}
+
+func (s *DockerSuite) TestEventsFilterImageLabels(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+	since := daemonTime(c).Unix()
+	name := "labelfilterimage"
+	label := "io.docker.testing=image"
+
+	// Build a test image.
+	_, err := buildImage(name, `
+		FROM busybox:latest
+		LABEL io.docker.testing=image`, true)
+	if err != nil {
+		c.Fatalf("Couldn't create image: %q", err)
+	}
+
+	dockerCmd(c, "tag", name, "labelfiltertest:tag1")
+	dockerCmd(c, "tag", name, "labelfiltertest:tag2")
+	dockerCmd(c, "tag", "busybox:latest", "labelfiltertest:tag3")
+
+	out, _ := dockerCmd(
+		c,
+		"events",
+		fmt.Sprintf("--since=%d", since),
+		fmt.Sprintf("--until=%d", daemonTime(c).Unix()),
+		"--filter", fmt.Sprintf("label=%s", label))
+
+	events := strings.Split(strings.TrimSpace(out), "\n")
+	c.Assert(len(events), checker.Equals, 2, check.Commentf("Events == %s", events))
+	for _, e := range events {
+		c.Assert(e, checker.Contains, "labelfiltertest")
+	}
+}
+
 func (s *DockerSuite) TestEventsFilterContainer(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := fmt.Sprintf("%d", daemonTime(c).Unix())
 	nameID := make(map[string]string)
 
@@ -391,7 +461,7 @@ func (s *DockerSuite) TestEventsFilterContainer(c *check.C) {
 
 	checkEvents := func(id string, events []string) error {
 		if len(events) != 4 { // create, attach, start, die
-			return fmt.Errorf("expected 3 events, got %v", events)
+			return fmt.Errorf("expected 4 events, got %v", events)
 		}
 		for _, event := range events {
 			e := strings.Fields(event)
@@ -426,6 +496,7 @@ func (s *DockerSuite) TestEventsFilterContainer(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsStreaming(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	start := daemonTime(c).Unix()
 
 	id := make(chan string)
@@ -503,6 +574,7 @@ func (s *DockerSuite) TestEventsStreaming(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsCommit(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
@@ -519,6 +591,7 @@ func (s *DockerSuite) TestEventsCommit(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsCopy(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	// Build a test image.
@@ -558,6 +631,7 @@ func (s *DockerSuite) TestEventsCopy(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsResize(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
@@ -578,6 +652,7 @@ func (s *DockerSuite) TestEventsResize(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsAttach(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	out, _ := dockerCmd(c, "run", "-di", "busybox", "/bin/cat")
@@ -614,6 +689,7 @@ func (s *DockerSuite) TestEventsAttach(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsRename(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	dockerCmd(c, "run", "--name", "oldName", "busybox", "true")
@@ -626,6 +702,7 @@ func (s *DockerSuite) TestEventsRename(c *check.C) {
 }
 
 func (s *DockerSuite) TestEventsTop(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	since := daemonTime(c).Unix()
 
 	out, _ := dockerCmd(c, "run", "-d", "busybox", "top")
@@ -643,6 +720,7 @@ func (s *DockerSuite) TestEventsTop(c *check.C) {
 
 // #13753
 func (s *DockerSuite) TestEventsDefaultEmpty(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	dockerCmd(c, "run", "busybox")
 	out, _ := dockerCmd(c, "events", fmt.Sprintf("--until=%d", daemonTime(c).Unix()))
 	c.Assert(strings.TrimSpace(out), check.Equals, "")
@@ -650,6 +728,7 @@ func (s *DockerSuite) TestEventsDefaultEmpty(c *check.C) {
 
 // #14316
 func (s *DockerRegistrySuite) TestEventsImageFilterPush(c *check.C) {
+	testRequires(c, DaemonIsLinux)
 	testRequires(c, Network)
 	since := daemonTime(c).Unix()
 	repoName := fmt.Sprintf("%v/dockercli/testf", privateRegistryURL)
