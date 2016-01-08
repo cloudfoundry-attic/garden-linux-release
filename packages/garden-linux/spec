@@ -58,6 +58,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/hook/hook/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/bind_mount/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/device/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/integration/graph/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/helpers/capcheck/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/lifecycle/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/integration/lifecycle/shm_test/*.go # gosub
@@ -194,6 +195,8 @@ files:
   - github.com/docker/docker/daemon/events/*.go # gosub
   - github.com/docker/docker/daemon/graphdriver/*.go # gosub
   - github.com/docker/docker/daemon/graphdriver/aufs/*.go # gosub
+  - github.com/docker/docker/daemon/graphdriver/overlay/*.go # gosub
+  - github.com/docker/docker/daemon/graphdriver/vfs/*.go # gosub
   - github.com/docker/docker/daemon/network/*.go # gosub
   - github.com/docker/docker/graph/*.go # gosub
   - github.com/docker/docker/graph/tags/*.go # gosub
