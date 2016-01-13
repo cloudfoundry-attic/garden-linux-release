@@ -115,6 +115,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_graph/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_mkdir_chowner/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_remover/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_rootfs_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_subnet_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysconfig/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysinfo/*.go # gosub
@@ -132,6 +133,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_retainer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/pkg/chown/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/pkg/retrier/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/quota_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/quota_manager/fakes/*.go # gosub
@@ -144,7 +146,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_mapper/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_namespacer/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_rootfs_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fake_translator/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/*.go # gosub
