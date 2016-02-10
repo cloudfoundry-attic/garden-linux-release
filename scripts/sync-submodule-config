@@ -3,4 +3,5 @@ set -e -x
 
 ROOT_DIR_PATH=$(cd $(dirname $0)/.. && pwd)
 
+which gosub
 $ROOT_DIR_PATH/scripts/garden-linux-dependencies | xargs go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go sync
