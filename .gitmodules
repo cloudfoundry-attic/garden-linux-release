@@ -125,3 +125,11 @@
 	path = src/github.com/golang/protobuf
 	url = https://github.com/golang/protobuf
 	branch = master
+[submodule "src/github.com/eapache/go-resiliency"]
+	path = src/github.com/eapache/go-resiliency
+	url = https://github.com/eapache/go-resiliency
+	branch = master
+[submodule "src/github.com/cloudfoundry-incubator/goci"]
+	path = src/github.com/cloudfoundry-incubator/goci
+	url = https://github.com/cloudfoundry-incubator/goci
+	branch = master
