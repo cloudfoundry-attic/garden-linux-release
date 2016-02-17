@@ -115,6 +115,7 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_graph/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_mkdir_chowner/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_remover/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_rootfs_cleaner/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_rootfs_provider/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/resource_pool/fake_subnet_pool/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/sysconfig/*.go # gosub
