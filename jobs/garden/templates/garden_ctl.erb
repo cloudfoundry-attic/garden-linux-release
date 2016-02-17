@@ -111,6 +111,8 @@ case $1 in
 
     ulimit -n 65536
 
+    echo 1 > /proc/sys/kernel/dmesg_restrict
+
     echo $$ > $PIDFILE
 
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
