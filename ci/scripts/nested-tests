@@ -47,7 +47,7 @@ create_loop_devices 256
   -mtu=1500 \
   -containerGraceTime=5m \
   -logLevel=error \
-  -enableGraphCleanup=true \
+  -graphCleanupThresholdMB=1024 \
   -persistentImage="docker:///busybox" \
   -persistentImage="docker:///ubuntu" \
   -persistentImage="docker:///cloudfoundry/ubuntu-bc" \

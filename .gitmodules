@@ -129,7 +129,7 @@
 	path = src/github.com/eapache/go-resiliency
 	url = https://github.com/eapache/go-resiliency
 	branch = master
-[submodule "src/github.com/cloudfoundry-incubator/goci"]
-	path = src/github.com/cloudfoundry-incubator/goci
-	url = https://github.com/cloudfoundry-incubator/goci
+[submodule "src/github.com/opencontainers/specs"]
+	path = src/github.com/opencontainers/specs
+	url = https://github.com/cloudfoundry-incubator/specs
 	branch = master

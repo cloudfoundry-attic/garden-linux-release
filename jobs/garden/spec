@@ -55,9 +55,9 @@ properties:
     description: "path to the rootfs to use when a container specifies no rootfs"
     default: /var/vcap/packages/busybox
 
-  garden.enable_graph_cleanup:
-    description: "Enable the graph garbage collection"
-    default: false
+  garden.graph_cleanup_threshold_in_mb:
+    description: "Threshold at which graph cleanup should be performed"
+    default: -1
 
   garden.log_level:
     description: "Log level of the Garden server. Can be one of debug, info, error or fatal"

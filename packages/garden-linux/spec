@@ -129,6 +129,8 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/docker_drivers/aufs/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/docker_drivers/aufs/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/cleaner/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden-shed/layercake/cleaner/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_cake/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-shed/layercake/fake_id_provider/*.go # gosub
@@ -160,7 +162,6 @@ files:
   - github.com/cloudfoundry-incubator/garden/server/streamer/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/server/timebomb/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/transport/*.go # gosub
-  - github.com/cloudfoundry-incubator/goci/specs/*.go # gosub
   - github.com/cloudfoundry/dropsonde/*.go # gosub
   - github.com/cloudfoundry/dropsonde/control/*.go # gosub
   - github.com/cloudfoundry/dropsonde/emitter/*.go # gosub
@@ -286,6 +287,7 @@ files:
   - github.com/onsi/gomega/types/*.go # gosub
   - github.com/opencontainers/runc/libcontainer/label/*.go # gosub
   - github.com/opencontainers/runc/libcontainer/user/*.go # gosub
+  - github.com/opencontainers/specs/*.go # gosub
   - github.com/pivotal-golang/archiver/extractor/test_helper/*.go # gosub
   - github.com/pivotal-golang/clock/*.go # gosub
   - github.com/pivotal-golang/clock/fakeclock/*.go # gosub
