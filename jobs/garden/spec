@@ -38,14 +38,11 @@ properties:
     default: false
 
   garden.docker_registry_endpoint:
-    description: "An URL pointing to the Docker registry to use to fetch Docker images. If unset, this will default to the Docker default."
+    description: "URL pointing to the Docker registry to use to fetch Docker images. If unset, this will default to the Docker default."
 
-  garden.tag:
-    description: "A string that is a server-wide identifier used for 'global' configuration."
-
-  garden.debug_listen_address:
-    description: "tcp address on which to serve debug info"
-    default: "0.0.0.0:17013"
+  garden.insecure_docker_registry_list:
+    description: "list of IP:PORT tuples and CIDR subnet masks. Pulling from docker registries with self signed certificates will not be permitted if the registry's address is not listed here."
+    default: []
 
   garden.default_container_grace_time:
     description: "duration after which to reap idle containers"
@@ -56,11 +53,12 @@ properties:
     default: /var/vcap/packages/busybox
 
   garden.graph_cleanup_threshold_in_mb:
-    description: "Threshold at which graph cleanup should be performed"
+    description: "Total size of all filesystem layers downloaded from Docker registries before graph cleanup is activated. -1 disables graph cleanup."
     default: -1
 
-  garden.log_level:
-    description: "Log level of the Garden server. Can be one of debug, info, error or fatal"
+  garden.persistent_image_list:
+    description: "List of Rootfs Paths (directories or docker URLs) which will never be deleted during graph cleanup"
+    default: []
 
   garden.max_containers:
     description: "Maximum number of containers that garden will have running at the same time. It is not recommended to set this larger than 250."
@@ -81,24 +79,26 @@ properties:
     default: false
 
   garden.dropsonde.origin:
-    description: "A string identifier that will be used when reporting metrics to Dropsonde."
+    description: "identifier that will be used when reporting metrics to Dropsonde"
 
   garden.dropsonde.destination:
-    description: "A URL that points at the Metron agent to which metrics are forwarded. By default, it matches with the default of Metron."
-
-  garden.insecure_docker_registry_list:
-    description: "An array of IP:PORT tuples and CIDR subnet masks. Pulling from docker registries with self signed certificates will not be permitted if the registry's address is not listed here."
-    default: []
-
-  garden.persistent_image_list:
-    description: "Array of Rootfs Paths (directories or docker URLs) which will never be garbage collected"
-    default: []
+    description: "a URL that points at the Metron agent to which metrics are forwarded. By default, it matches with the default of Metron."
 
   garden.http_proxy:
-    description: Http proxy that Garden process should use
+    description: http proxy that the Garden server process will use
 
   garden.https_proxy:
-    description: Https proxy that Garden process should use
+    description: https proxy that the Garden server process will use
 
   garden.no_proxy:
-    description: List of comma-separated hosts that should skip connecting to the proxy
+    description: list of comma-separated hosts for which the http and https proxies will be skipped
+
+  garden.log_level:
+    description: "log level for the Garden server - can be debug, info, error or fatal"
+
+  garden.tag:
+    description: "a string that is a server-wide identifier used for 'global' configuration"
+
+  garden.debug_listen_address:
+    description: "tcp address on which to serve debug info"
+    default: "0.0.0.0:17013"
