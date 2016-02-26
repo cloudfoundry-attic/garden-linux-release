@@ -84,6 +84,10 @@ properties:
   garden.dropsonde.destination:
     description: "a URL that points at the Metron agent to which metrics are forwarded. By default, it matches with the default of Metron."
 
+  garden.dns_servers:
+    description: Override DNS servers to be used in containers; defaults to the same as the host
+    default: []
+
   garden.http_proxy:
     description: http proxy that the Garden server process will use
 
