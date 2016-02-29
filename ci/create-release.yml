@@ -8,5 +8,8 @@ inputs:
 - name: release-develop
 - name: version
 
+outputs:
+- name: bosh-release
+
 run:
   path: release-develop/ci/scripts/create-release
