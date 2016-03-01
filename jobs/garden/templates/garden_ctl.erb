@@ -161,6 +161,9 @@ case $1 in
     <% p("garden.persistent_image_list").each do |url| %> \
       -persistentImage=<%= url %> \
     <% end %> \
+    <% p("garden.dns_servers").each do |server| %> \
+      -dnsServer=<%= server %> \
+    <% end %> \
       1>>$LOG_DIR/garden.stdout.log \
       2>>$LOG_DIR/garden.stderr.log
 
