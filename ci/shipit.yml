@@ -1,14 +1,17 @@
 ---
-# may want to replace this with your own image
 image: docker:///concourse/concourse-ci
 
 platform: linux
 
 inputs:
-- name: release-develop
-- name: version
-- name: garden-ci
-- name: candidate-tarball
+  - name: release-develop
+  - name: version
+  - name: garden-ci
+  - name: candidate-tarball
+
+outputs:
+  - name: final-release
+  - name: release
 
 run:
   path: release-develop/ci/scripts/shipit
