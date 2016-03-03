@@ -1,5 +1,9 @@
 # Garden Linux Release
 
+**Garden Linux is not actively developed anymore. We are currnetly focusing on
+the OCI Garden backend:
+[Guardian](https://github.com/cloudfoundry-incubator/guardian-release).**
+
 A [BOSH](http://docs.cloudfoundry.org/bosh/) release for deploying [Garden Linux](https://github.com/cloudfoundry-incubator/garden-linux).
 
 To play with it, deploy to BOSH Lite in the usual way:
