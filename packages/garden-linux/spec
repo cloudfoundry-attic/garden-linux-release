@@ -2,7 +2,7 @@
 name: garden-linux
 
 dependencies:
-  - golang_1.4
+  - golang_1.6
 
 files:
   - github.com/cloudfoundry-incubator/garden-linux/Makefile
