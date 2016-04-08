@@ -620,4 +620,6 @@ builds:
     version: 0.334.0
   12357103-758b-4dde-bf78-844bd8c4b0cc:
     version: 0.335.0
+  906caec1-0ab8-4bc4-aafe-30d3df317324:
+    version: 0.336.0
 format-version: '2'

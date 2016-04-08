@@ -1,0 +1,46 @@
+---
+packages:
+- name: shadow
+  version: ffd1741bd9e0a176e67c61ef70cd0ed76b0ec285
+  fingerprint: ffd1741bd9e0a176e67c61ef70cd0ed76b0ec285
+  sha1: e5eb38bfa8f3c818086bd416fdec14f9fb0b7131
+  dependencies: []
+- name: garden-linux
+  version: f19286f9ae201118d5187326ec99336158729dd3
+  fingerprint: f19286f9ae201118d5187326ec99336158729dd3
+  sha1: 433226e92257f5f55e24d290e17b108ef46048f9
+  dependencies:
+  - golang_1.6
+- name: busybox
+  version: 1593c41beb57c12d7f2b82dff61b47d4d119913d
+  fingerprint: 1593c41beb57c12d7f2b82dff61b47d4d119913d
+  sha1: c46bea9585decc54e7052efc27c138d7b618ffae
+  dependencies: []
+- name: iptables
+  version: 7226d311e90f49b05287e79f339581a1de9ea82e
+  fingerprint: 7226d311e90f49b05287e79f339581a1de9ea82e
+  sha1: 98345e72fd97984b8c2a1a485b9988f207dce60d
+  dependencies: []
+- name: golang_1.6
+  version: 0e84947d2c2122ef936e107ba76a3730760ea5e4
+  fingerprint: 0e84947d2c2122ef936e107ba76a3730760ea5e4
+  sha1: f7942055f87b4fc19c5361b1f958d1ac068e2d3a
+  dependencies: []
+- name: tar
+  version: cfd0d2ff9e0773446e403cef583e0f01cd61f592
+  fingerprint: cfd0d2ff9e0773446e403cef583e0f01cd61f592
+  sha1: eecde3f2709ac96c6e28bfd65f1408484c7e4c23
+  dependencies: []
+jobs:
+- name: garden
+  version: c359a75e72b476357d11b64222ee7f8655c7f34e
+  fingerprint: c359a75e72b476357d11b64222ee7f8655c7f34e
+  sha1: 2c2a5c393619b8e026c70adabfcd77b5fb398e0a
+license:
+  version: 5d8ee81dc9e612c0eefcf39e9efae66d2fad2a99
+  fingerprint: 5d8ee81dc9e612c0eefcf39e9efae66d2fad2a99
+  sha1: 66041fb7da4ee0aab59ae9f4b4e7fb07db7f6189
+commit_hash: 45204b95
+uncommitted_changes: false
+name: garden-linux
+version: 0.336.0
