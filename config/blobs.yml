@@ -15,7 +15,7 @@ tar/tar-1.28.tar.gz:
   object_id: e4666fc9-118f-4bf1-9b58-7581dd306619
   sha: cd30a13bbfefb54b17e039be7c43d2592dd3d5d0
   size: 3877043
-golang/go1.6.linux-amd64.tar.gz:
-  object_id: d5e97ac7-9d9c-4ab4-98f0-f0be6c5dfdc8
-  sha: 01a6a28dbe31a53103b600979bbbbd63a8104456
-  size: 84799480
+golang/go1.6.1.linux-amd64.tar.gz:
+  object_id: f6ea85e8-6f23-42fb-9996-56e20233c16c
+  sha: c73492474dcc7a233772d27e948b74468d9f1849
+  size: 84824395
