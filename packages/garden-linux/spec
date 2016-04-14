@@ -287,7 +287,7 @@ files:
   - github.com/onsi/gomega/types/*.go # gosub
   - github.com/opencontainers/runc/libcontainer/label/*.go # gosub
   - github.com/opencontainers/runc/libcontainer/user/*.go # gosub
-  - github.com/opencontainers/specs/*.go # gosub
+  - github.com/opencontainers/runtime-spec/specs-go/*.go # gosub
   - github.com/pivotal-golang/archiver/extractor/test_helper/*.go # gosub
   - github.com/pivotal-golang/clock/*.go # gosub
   - github.com/pivotal-golang/clock/fakeclock/*.go # gosub
