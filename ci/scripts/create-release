@@ -3,13 +3,13 @@
 
 set -e -x
 
-VERSION=$(cat ./version/number)
+VERSION=$(cat ./gl-version/number)
 if [ -z "$VERSION" ]; then
   echo "missing version number"
   exit 1
 fi
 
-cd release-develop/
+cd gl-release-develop/
 
 bosh -n create release --with-tarball --version "${VERSION}"
 

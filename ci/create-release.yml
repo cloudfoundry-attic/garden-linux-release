@@ -5,11 +5,11 @@ image: docker:///concourse/concourse-ci
 platform: linux
 
 inputs:
-- name: release-develop
-- name: version
+- name: gl-release-develop
+- name: gl-version
 
 outputs:
 - name: bosh-release
 
 run:
-  path: release-develop/ci/scripts/create-release
+  path: gl-release-develop/ci/scripts/create-release

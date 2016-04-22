@@ -4,8 +4,8 @@ image: docker:///concourse/concourse-ci
 platform: linux
 
 inputs:
-  - name: release-develop
-  - name: version
+  - name: gl-release-develop
+  - name: gl-version
   - name: garden-ci
   - name: candidate-tarball
 
@@ -14,4 +14,4 @@ outputs:
   - name: release
 
 run:
-  path: release-develop/ci/scripts/shipit
+  path: gl-release-develop/ci/scripts/shipit

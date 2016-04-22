@@ -3,11 +3,11 @@ platform: linux
 image: docker:///concourse/git-resource
 
 inputs:
-  - name: release-master
-  - name: release-develop
+  - name: gl-release-master
+  - name: gl-release-develop
 
 outputs:
   - name: release-merged
 
 run:
-  path: release-develop/ci/scripts/merge-master
+  path: gl-release-develop/ci/scripts/merge-master

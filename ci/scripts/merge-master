@@ -3,9 +3,9 @@ set -e -x
 
 export PATH=$GOPATH/bin:$PATH
 
-DEVELOP=$PWD/release-develop
+DEVELOP=$PWD/gl-release-develop
 
-git clone ./release-master ./release-merged
+git clone ./gl-release-master ./release-merged
 
 cd release-merged
 
