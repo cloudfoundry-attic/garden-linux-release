@@ -46,6 +46,7 @@
 [submodule "src/github.com/cloudfoundry/gunk"]
 	path = src/github.com/cloudfoundry/gunk
 	url = https://github.com/cloudfoundry/gunk
+	branch = master
 [submodule "src/github.com/docker/distribution"]
 	path = src/github.com/docker/distribution
 	url = https://github.com/docker/distribution
