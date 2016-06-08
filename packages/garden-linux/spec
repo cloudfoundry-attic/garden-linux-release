@@ -74,8 +74,6 @@ files:
   - github.com/cloudfoundry-incubator/garden-linux/iodaemon/test_print_signals/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_backend/fakes/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/linux_backend/healthchecker/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden-linux/linux_backend/healthchecker/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/bandwidth_manager/*.go # gosub
   - github.com/cloudfoundry-incubator/garden-linux/linux_container/bandwidth_manager/fake_bandwidth_manager/*.go # gosub
