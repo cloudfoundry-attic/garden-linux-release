@@ -50,8 +50,8 @@ create_loop_devices 256
   -graphCleanupThresholdMB=1024 \
   -persistentImage="docker:///busybox" \
   -persistentImage="docker:///ubuntu" \
-  -persistentImage="docker:///cloudfoundry/ubuntu-bc" \
-  -persistentImage="docker:///cloudfoundry/garden-busybox" \
+  -persistentImage="docker:///cfgarden/ubuntu-bc" \
+  -persistentImage="docker:///cfgarden/garden-busybox" \
   -rootfs=/opt/warden/rootfs &
 
 sleep 5

@@ -153,8 +153,9 @@ files:
   - github.com/cloudfoundry-incubator/garden-shed/rootfs_provider/fakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/connection/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden/client/connection/connectionfakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/client/connection/fakes/*.go # gosub
-  - github.com/cloudfoundry-incubator/garden/fakes/*.go # gosub
+  - github.com/cloudfoundry-incubator/garden/gardenfakes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/routes/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/scripts/update-godoc/*.go # gosub
   - github.com/cloudfoundry-incubator/garden/server/*.go # gosub
