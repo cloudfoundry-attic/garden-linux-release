@@ -1,3 +1,4 @@
+#!/bin/bash
 set -e
 
 read -p "Did you make sure CI is green? (yes/no):" response
