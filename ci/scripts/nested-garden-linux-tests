@@ -11,7 +11,7 @@ export PATH=$GOROOT/bin:$PATH
 
 export GOPATH=$PWD
 
-cd src/github.com/cloudfoundry-incubator/garden-linux
+cd src/code.cloudfoundry.org/garden-linux
 
 # Temporary workaround to ensure we can move /sys mounting feature through CI pipeline without 
 # depending on it to be present in concourse before being delivered. See #98539374

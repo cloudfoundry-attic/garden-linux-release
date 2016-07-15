@@ -45,7 +45,7 @@ Then, assuming you ran `bin/add-route` as part of setting up BOSH Lite, proceed 
 
 ## Kick the tyres
 
-Use the [REST API](https://github.com/cloudfoundry-incubator/garden#rest-api) against endpoint `http://<IP address of Garden job>:7777` outside the VM or `http://127.0.0.1:7777` inside the VM. Create a container, then:
+Use the [REST API](https://github.com/cloudfoundry/garden#rest-api) against endpoint `http://<IP address of Garden job>:7777` outside the VM or `http://127.0.0.1:7777` inside the VM. Create a container, then:
 ```
 # spawn a process
 #

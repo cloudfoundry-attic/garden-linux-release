@@ -10,5 +10,5 @@ export PATH=$PWD/bin:$PATH
 
 go install github.com/onsi/ginkgo/ginkgo
 
-cd src/github.com/cloudfoundry-incubator/garden-integration-tests
+cd src/code.cloudfoundry.org/garden-integration-tests
 ginkgo -p -nodes=4 -stream -- --test.timeout=15m

@@ -93,7 +93,7 @@ case $1 in
     export PATH=/var/vcap/packages/shadow/sbin:$PATH
     export PATH=/var/vcap/jobs/garden/bin:$PATH
 
-    cp /var/vcap/packages/tar/tar /var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin
+    cp /var/vcap/packages/tar/tar /var/vcap/packages/garden-linux/src/code.cloudfoundry.org/garden-linux/linux_backend/bin
 
     mkdir -p /var/vcap/data/garden/depot
 
@@ -120,7 +120,7 @@ case $1 in
       -snapshots="${snapshots_path}" \
       -graph=$graph_path \
       -graphDriver=aufs \
-      -bin=/var/vcap/packages/garden-linux/src/github.com/cloudfoundry-incubator/garden-linux/linux_backend/bin \
+      -bin=/var/vcap/packages/garden-linux/src/code.cloudfoundry.org/garden-linux/linux_backend/bin \
       -mtu=<%= p("garden.network_mtu") %> \
       -listenNetwork=<%= p("garden.listen_network") %> \
       -listenAddr=<%= p("garden.listen_address") %> \

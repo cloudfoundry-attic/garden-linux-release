@@ -4,23 +4,23 @@ ROOT_DIR_PATH=$(cd $(dirname $0)/.. && pwd)
 temp_file=$(mktemp /tmp/gosub.XXXXXXXXXX)
 
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
-  -a github.com/cloudfoundry-incubator/garden/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/container_daemon/initd/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/container_daemon/wsh/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/containerizer/initc/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/containerizer/system/pivotter/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/containerizer/wshd/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/hook/hook/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/integration/helpers/capcheck/... \
-  -a github.com/cloudfoundry-incubator/garden-linux/iodaemon/... \
+  -a code.cloudfoundry.org/garden/... \
+  -a code.cloudfoundry.org/garden-linux/... \
+  -a code.cloudfoundry.org/garden-linux/container_daemon/initd/... \
+  -a code.cloudfoundry.org/garden-linux/container_daemon/wsh/... \
+  -a code.cloudfoundry.org/garden-linux/containerizer/initc/... \
+  -a code.cloudfoundry.org/garden-linux/containerizer/system/pivotter/... \
+  -a code.cloudfoundry.org/garden-linux/containerizer/wshd/... \
+  -a code.cloudfoundry.org/garden-linux/hook/hook/... \
+  -a code.cloudfoundry.org/garden-linux/integration/helpers/capcheck/... \
+  -a code.cloudfoundry.org/garden-linux/iodaemon/... \
   -a github.com/vito/gosub/... > $temp_file
 
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \
-  -t github.com/cloudfoundry-incubator/garden/... \
-  -t github.com/cloudfoundry-incubator/garden-shed/... \
-  -t github.com/cloudfoundry-incubator/garden-linux/integration/... \
-  -t github.com/cloudfoundry-incubator/garden-integration-tests/... >> $temp_file
+  -t code.cloudfoundry.org/garden/... \
+  -t code.cloudfoundry.org/garden-shed/... \
+  -t code.cloudfoundry.org/garden-linux/integration/... \
+  -t code.cloudfoundry.org/garden-integration-tests/... >> $temp_file
 
 # Linux only packages
 go run $ROOT_DIR_PATH/src/github.com/vito/gosub/*.go list \

@@ -11,7 +11,7 @@ export PATH=$GOROOT/bin:$PATH
 export GOPATH=$PWD
 export PATH=$GOPATH/bin:$PATH
 
-pushd src/github.com/cloudfoundry-incubator/garden-linux
+pushd src/code.cloudfoundry.org/garden-linux
 make
 
 if ! grep -qs '/sys' /proc/mounts; then
@@ -58,6 +58,6 @@ sleep 5
 popd
 
 go install github.com/onsi/ginkgo/ginkgo
-cd src/github.com/cloudfoundry-incubator/garden-integration-tests
+cd src/code.cloudfoundry.org/garden-integration-tests
 export GARDEN_ADDRESS=$(hostname):7777
 ginkgo -p -nodes=4 "$@"
