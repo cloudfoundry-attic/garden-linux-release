@@ -1,7 +1,3 @@
-[submodule "src/github.com/cloudfoundry-incubator/garden"]
-	path = src/code.cloudfoundry.org/garden
-	url = https://github.com/cloudfoundry-incubator/garden
-	branch = master
 [submodule "src/github.com/onsi/ginkgo"]
 	path = src/github.com/onsi/ginkgo
 	url = https://github.com/onsi/ginkgo
@@ -18,10 +14,6 @@
 [submodule "src/github.com/gogo/protobuf"]
 	path = src/github.com/gogo/protobuf
 	url = https://github.com/gogo/protobuf
-[submodule "src/github.com/cloudfoundry-incubator/garden-linux"]
-	path = src/code.cloudfoundry.org/garden-linux
-	url = https://github.com/cloudfoundry-incubator/garden-linux
-	branch = master
 [submodule "src/github.com/Sirupsen/logrus"]
 	path = src/github.com/Sirupsen/logrus
 	url = https://github.com/Sirupsen/logrus
@@ -71,10 +63,6 @@
 [submodule "src/golang.org/x/crypto"]
 	path = src/golang.org/x/crypto
 	url = https://go.googlesource.com/crypto
-[submodule "src/github.com/cloudfoundry-incubator/garden-integration-tests"]
-	path = src/code.cloudfoundry.org/garden-integration-tests
-	url = https://github.com/cloudfoundry-incubator/garden-integration-tests
-	branch = master
 [submodule "src/github.com/pivotal-golang/archiver"]
 	path = src/github.com/pivotal-golang/archiver
 	url = https://github.com/pivotal-golang/archiver
@@ -92,10 +80,6 @@
 [submodule "src/github.com/blang/semver"]
 	path = src/github.com/blang/semver
 	url = https://github.com/blang/semver
-	branch = master
-[submodule "src/github.com/cloudfoundry-incubator/garden-shed"]
-	path = src/code.cloudfoundry.org/garden-shed
-	url = https://github.com/cloudfoundry-incubator/garden-shed
 	branch = master
 [submodule "src/github.com/opencontainers/runc"]
 	path = src/github.com/opencontainers/runc
