@@ -18,9 +18,6 @@
 [submodule "src/github.com/gogo/protobuf"]
 	path = src/github.com/gogo/protobuf
 	url = https://github.com/gogo/protobuf
-[submodule "src/github.com/pivotal-golang/lager"]
-	path = src/code.cloudfoundry.org/lager
-	url = https://github.com/pivotal-golang/lager
 [submodule "src/github.com/cloudfoundry-incubator/garden-linux"]
 	path = src/code.cloudfoundry.org/garden-linux
 	url = https://github.com/cloudfoundry-incubator/garden-linux
@@ -28,12 +25,6 @@
 [submodule "src/github.com/Sirupsen/logrus"]
 	path = src/github.com/Sirupsen/logrus
 	url = https://github.com/Sirupsen/logrus
-[submodule "src/github.com/cloudfoundry-incubator/cf-debug-server"]
-	path = src/code.cloudfoundry.org/debugserver
-	url = https://github.com/cloudfoundry-incubator/cf-debug-server
-[submodule "src/github.com/cloudfoundry-incubator/cf-lager"]
-	path = src/code.cloudfoundry.org/cflager
-	url = https://github.com/cloudfoundry-incubator/cf-lager
 [submodule "src/github.com/cloudfoundry/dropsonde"]
 	path = src/github.com/cloudfoundry/dropsonde
 	url = https://github.com/cloudfoundry/dropsonde
