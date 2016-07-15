@@ -6,6 +6,7 @@ REPO_DIR=${BOSH_INSTALL_TARGET}/src/${REPO_NAME}
 
 mkdir -p ${BOSH_INSTALL_TARGET}/src
 
+mv code.cloudfoundry.org/ ${BOSH_INSTALL_TARGET}/src/.
 mv github.com/ ${BOSH_INSTALL_TARGET}/src/.
 mv golang.org/ ${BOSH_INSTALL_TARGET}/src/.
 
