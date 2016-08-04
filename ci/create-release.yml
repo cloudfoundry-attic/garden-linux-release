@@ -1,8 +1,8 @@
 ---
 image_resource:
-   type: docker-image
-      source:
-           repository: cfgarden/garden-ci
+ type: docker-image
+ source:
+   repository: cfgarden/garden-ci
 
 platform: linux
 
