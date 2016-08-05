@@ -2,7 +2,7 @@
 
 **Garden Linux is not actively developed anymore. We are currnetly focusing on
 the OCI Garden backend:
-[Guardian](https://github.com/cloudfoundry/guardian-release).**
+[garden-runc](https://github.com/cloudfoundry/garden-runc-release).**
 
 A [BOSH](http://docs.cloudfoundry.org/bosh/) release for deploying [Garden Linux](https://github.com/cloudfoundry/garden-linux).
 
@@ -34,7 +34,7 @@ bosh deploy
 
 We use [concourse](http://github.com/concourse/concourse) to run our tests. You should first set up concourse (a local vagrant install of concourse will do). If you want to use a remote concourse, set the GARDEN_REMOTE_ATC_URL environment variable, this will be passed as --target to fly if present.
 
-The garden-linux-release package is a bosh release and a go workspace. The included .envrc will set up your GOPATH environment variable for you (if you have [direnv](https://github.com/direnv/direnv) installed and run `direnv allow`). 
+The garden-linux-release package is a bosh release and a go workspace. The included .envrc will set up your GOPATH environment variable for you (if you have [direnv](https://github.com/direnv/direnv) installed and run `direnv allow`).
 
 You can develop in the submodules (normally src/code.cloudfoundry.org/garden and src/code.cloudfoundry.org/garden-linux) and then, when you're ready to bump, run ./scripts/test-and-bump to run all the tests and generate a commit to bump the submodules. You can run all the tests without creating a bump commit with ./scripts/test.
 
