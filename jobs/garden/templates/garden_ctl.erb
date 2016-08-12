@@ -161,8 +161,8 @@ case $1 in
     <% p("garden.persistent_image_list").each do |url| %> \
       -persistentImage=<%= url %> \
     <% end %> \
-      1>>$LOG_DIR/garden.stdout.log \
-      2>>$LOG_DIR/garden.stderr.log
+    2> >(tee -a $LOG_DIR/garden.stderr.log | logger -p user.error -t vcap.garden) \
+    1> >(tee -a $LOG_DIR/garden.stdout.log | logger -t vcap.garden)
 
     ;;
 
