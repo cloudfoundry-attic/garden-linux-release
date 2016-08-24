@@ -2,7 +2,7 @@
 image_resource:
  type: docker-image
  source:
-   repository: cloudfoundry/golang-ci
+   repository: cfgarden/golang-ci
 
 platform: linux
 
