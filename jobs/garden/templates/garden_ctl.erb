@@ -115,6 +115,14 @@ case $1 in
 
     echo $$ > $PIDFILE
 
+    <% if p('garden.log_to_syslog') %>
+    exec 1> >( tee -a $LOG_DIR/garden.stdout.log | logger -t vcap.garden.stdout ) \
+         2> >( tee -a $LOG_DIR/garden.stderr.log | logger -t vcap.garden.stderr )
+    <% else %>
+    exec 1>>$LOG_DIR/garden.stdout.log \
+         2>>$LOG_DIR/garden.stderr.log
+    <% end %>
+
     exec /var/vcap/packages/garden-linux/bin/garden-linux \
       -depot=/var/vcap/data/garden/depot \
       -snapshots="${snapshots_path}" \
@@ -163,9 +171,7 @@ case $1 in
     <% end %> \
     <% p("garden.dns_servers").each do |server| %> \
       -dnsServer=<%= server %> \
-    <% end %> \
-      1>>$LOG_DIR/garden.stdout.log \
-      2>>$LOG_DIR/garden.stderr.log
+    <% end %>
 
     ;;
 

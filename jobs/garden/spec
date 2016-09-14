@@ -106,3 +106,7 @@ properties:
   garden.debug_listen_address:
     description: "tcp address on which to serve debug info"
     default: "0.0.0.0:17013"
+
+  garden.log_to_syslog:
+    description: "Set this to True to enable logging to syslog."
+    default: False
