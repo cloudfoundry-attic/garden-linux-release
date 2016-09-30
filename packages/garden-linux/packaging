@@ -10,7 +10,7 @@ mv code.cloudfoundry.org/ ${BOSH_INSTALL_TARGET}/src/.
 mv github.com/ ${BOSH_INSTALL_TARGET}/src/.
 mv golang.org/ ${BOSH_INSTALL_TARGET}/src/.
 
-export GOROOT=$(readlink -nf /var/vcap/packages/golang_1.6.1)
+export GOROOT=$(readlink -nf /var/vcap/packages/golang_1.7.1)
 export GOPATH=$BOSH_INSTALL_TARGET
 export PATH=$GOROOT/bin:$PATH
 
