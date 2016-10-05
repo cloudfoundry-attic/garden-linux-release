@@ -7,12 +7,12 @@ set -e
 #   'wget -qO- https://get.docker.com/ | sh'
 #
 # For test builds (ie. release candidates):
-#   'curl -sSL https://test.docker.com/ | sh'
+#   'curl -fsSL https://test.docker.com/ | sh'
 # or:
 #   'wget -qO- https://test.docker.com/ | sh'
 #
 # For experimental builds:
-#   'curl -sSL https://experimental.docker.com/ | sh'
+#   'curl -fsSL https://experimental.docker.com/ | sh'
 # or:
 #   'wget -qO- https://experimental.docker.com/ | sh'
 #
@@ -20,10 +20,19 @@ set -e
 #   To update this script on https://get.docker.com,
 #   use hack/release.sh during a normal release,
 #   or the following one-liner for script hotfixes:
-#     s3cmd put --acl-public -P hack/install.sh s3://get.docker.com/index
+#     aws s3 cp --acl public-read hack/install.sh s3://get.docker.com/index
 #
 
-url='https://get.docker.com/'
+url="https://get.docker.com/"
+apt_url="https://apt.dockerproject.org"
+yum_url="https://yum.dockerproject.org"
+gpg_fingerprint="58118E89F3A912897C070ADBF76221572C52609D"
+
+key_servers="
+ha.pool.sks-keyservers.net
+pgp.mit.edu
+keyserver.ubuntu.com
+"
 
 command_exists() {
 	command -v "$@" > /dev/null 2>&1
@@ -53,13 +62,17 @@ echo_docker_as_nonroot() {
 
 # Check if this is a forked Linux distro
 check_forked() {
+
 	# Check for lsb_release command existence, it usually exists in forked distros
 	if command_exists lsb_release; then
 		# Check if the `-u` option is supported
+		set +e
 		lsb_release -a -u > /dev/null 2>&1
+		lsb_release_exit_code=$?
+		set -e
 
 		# Check if the command has exited successfully, it means we're in a forked distro
-		if [ "$?" = "0" ]; then
+		if [ "$lsb_release_exit_code" = "0" ]; then
 			# Print info about current distro
 			cat <<-EOF
 			You're using '$lsb_dist' version '$dist_version'.
@@ -73,24 +86,76 @@ check_forked() {
 			cat <<-EOF
 			Upstream release is '$lsb_dist' version '$dist_version'.
 			EOF
+		else
+			if [ -r /etc/debian_version ] && [ "$lsb_dist" != "ubuntu" ] && [ "$lsb_dist" != "raspbian" ]; then
+				# We're Debian and don't even know it!
+				lsb_dist=debian
+				dist_version="$(cat /etc/debian_version | sed 's/\/.*//' | sed 's/\..*//')"
+				case "$dist_version" in
+					8|'Kali Linux 2')
+						dist_version="jessie"
+					;;
+					7)
+						dist_version="wheezy"
+					;;
+				esac
+			fi
 		fi
 	fi
+}
+
+rpm_import_repository_key() {
+	local key=$1; shift
+	local tmpdir=$(mktemp -d)
+	chmod 600 "$tmpdir"
+	for key_server in $key_servers ; do
+		gpg --homedir "$tmpdir" --keyserver "$key_server" --recv-keys "$key" && break
+	done
+	gpg --homedir "$tmpdir" -k "$key" >/dev/null
+	gpg --homedir "$tmpdir" --export --armor "$key" > "$tmpdir"/repo.key
+	rpm --import "$tmpdir"/repo.key
+	rm -rf "$tmpdir"
+}
+
+semverParse() {
+	major="${1%%.*}"
+	minor="${1#$major.}"
+	minor="${minor%%.*}"
+	patch="${1#$major.$minor.}"
+	patch="${patch%%[-.]*}"
 }
 
 do_install() {
 	case "$(uname -m)" in
 		*64)
 			;;
+		armv6l|armv7l)
+			;;
 		*)
 			cat >&2 <<-'EOF'
-			Error: you are not using a 64bit platform.
-			Docker currently only supports 64bit platforms.
+			Error: you are not using a 64bit platform or a Raspberry Pi (armv6l/armv7l).
+			Docker currently only supports 64bit platforms or a Raspberry Pi (armv6l/armv7l).
 			EOF
 			exit 1
 			;;
 	esac
 
 	if command_exists docker; then
+		version="$(docker -v | cut -d ' ' -f3 | cut -d ',' -f1)"
+		MAJOR_W=1
+		MINOR_W=10
+
+		semverParse $version
+
+		shouldWarn=0
+		if [ $major -lt $MAJOR_W ]; then
+			shouldWarn=1
+		fi
+
+		if [ $major -le $MAJOR_W ] && [ $minor -lt $MINOR_W ]; then
+			shouldWarn=1
+		fi
+
 		cat >&2 <<-'EOF'
 			Warning: the "docker" command appears to already exist on this system.
 
@@ -99,7 +164,23 @@ do_install() {
 			installation.
 
 			If you installed the current Docker package using this script and are using it
+		EOF
+
+		if [ $shouldWarn -eq 1 ]; then
+			cat >&2 <<-'EOF'
+			again to update Docker, we urge you to migrate your image store before upgrading
+			to v1.10+.
+
+			You can find instructions for this here:
+			https://github.com/docker/docker/wiki/Engine-v1.10.0-content-addressability-migration
+			EOF
+		else
+			cat >&2 <<-'EOF'
 			again to update Docker, you can safely ignore this message.
+			EOF
+		fi
+
+		cat >&2 <<-'EOF'
 
 			You may press Ctrl+C now to abort this script.
 		EOF
@@ -133,11 +214,13 @@ do_install() {
 	fi
 
 	# check to see which repo they are trying to install from
-	repo='main'
-	if [ "https://test.docker.com/" = "$url" ]; then
-		repo='testing'
-	elif [ "https://experimental.docker.com/" = "$url" ]; then
-		repo='experimental'
+	if [ -z "$repo" ]; then
+		repo='main'
+		if [ "https://test.docker.com/" = "$url" ]; then
+			repo='testing'
+		elif [ "https://experimental.docker.com/" = "$url" ]; then
+			repo='experimental'
+		fi
 	fi
 
 	# perform some very rudimentary platform detection
@@ -158,16 +241,26 @@ do_install() {
 	if [ -z "$lsb_dist" ] && [ -r /etc/oracle-release ]; then
 		lsb_dist='oracleserver'
 	fi
-	if [ -z "$lsb_dist" ]; then
-		if [ -r /etc/centos-release ] || [ -r /etc/redhat-release ]; then
-			lsb_dist='centos'
-		fi
+	if [ -z "$lsb_dist" ] && [ -r /etc/centos-release ]; then
+		lsb_dist='centos'
+	fi
+	if [ -z "$lsb_dist" ] && [ -r /etc/redhat-release ]; then
+		lsb_dist='redhat'
+	fi
+	if [ -z "$lsb_dist" ] && [ -r /etc/photon-release ]; then
+		lsb_dist='photon'
 	fi
 	if [ -z "$lsb_dist" ] && [ -r /etc/os-release ]; then
 		lsb_dist="$(. /etc/os-release && echo "$ID")"
 	fi
 
 	lsb_dist="$(echo "$lsb_dist" | tr '[:upper:]' '[:lower:]')"
+
+	# Special case redhatenterpriseserver
+	if [ "${lsb_dist}" = "redhatenterpriseserver" ]; then
+        	# Set it to redhat, it will be changed to centos below anyways
+        	lsb_dist='redhat'
+	fi
 
 	case "$lsb_dist" in
 
@@ -180,7 +273,7 @@ do_install() {
 			fi
 		;;
 
-		debian)
+		debian|raspbian)
 			dist_version="$(cat /etc/debian_version | sed 's/\/.*//' | sed 's/\..*//')"
 			case "$dist_version" in
 				8)
@@ -195,11 +288,16 @@ do_install() {
 		oracleserver)
 			# need to switch lsb_dist to match yum repo URL
 			lsb_dist="oraclelinux"
-			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//')"
+			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//' | sed 's/Server*//')"
 		;;
 
-		fedora|centos)
-			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//')"
+		fedora|centos|redhat)
+			dist_version="$(rpm -q --whatprovides ${lsb_dist}-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//' | sed 's/Server*//' | sort | tail -1)"
+		;;
+
+		"vmware photon")
+			lsb_dist="photon"
+			dist_version="$(. /etc/os-release && echo "$VERSION_ID")"
 		;;
 
 		*)
@@ -228,16 +326,66 @@ do_install() {
 			exit 0
 			;;
 
-		'opensuse project'|opensuse|'suse linux'|sle[sd])
+		'opensuse project'|opensuse)
+			echo 'Going to perform the following operations:'
+			if [ "$repo" != 'main' ]; then
+				echo '  * add repository obs://Virtualization:containers'
+			fi
+			echo '  * install Docker'
+			$sh_c 'echo "Press CTRL-C to abort"; sleep 3'
+
+			if [ "$repo" != 'main' ]; then
+				# install experimental packages from OBS://Virtualization:containers
+				(
+					set -x
+					zypper -n ar -f obs://Virtualization:containers Virtualization:containers
+					rpm_import_repository_key 55A0B34D49501BB7CA474F5AA193FBB572174FC2
+				)
+			fi
 			(
 				set -x
-				$sh_c 'sleep 3; zypper -n install docker'
+				zypper -n install docker
+			)
+			echo_docker_as_nonroot
+			exit 0
+			;;
+		'suse linux'|sle[sd])
+			echo 'Going to perform the following operations:'
+			if [ "$repo" != 'main' ]; then
+				echo '  * add repository obs://Virtualization:containers'
+				echo '  * install experimental Docker using packages NOT supported by SUSE'
+			else
+				echo '  * add the "Containers" module'
+				echo '  * install Docker using packages supported by SUSE'
+			fi
+			$sh_c 'echo "Press CTRL-C to abort"; sleep 3'
+
+			if [ "$repo" != 'main' ]; then
+				# install experimental packages from OBS://Virtualization:containers
+				echo >&2 'Warning: installing experimental packages from OBS, these packages are NOT supported by SUSE'
+				(
+					set -x
+					zypper -n ar -f obs://Virtualization:containers/SLE_12 Virtualization:containers
+					rpm_import_repository_key 55A0B34D49501BB7CA474F5AA193FBB572174FC2
+				)
+			else
+				# Add the containers module
+				# Note well-1: the SLE machine must already be registered against SUSE Customer Center
+				# Note well-2: the `-r ""` is required to workaround a known issue of SUSEConnect
+				(
+					set -x
+					SUSEConnect -p sle-module-containers/12/x86_64 -r ""
+				)
+			fi
+			(
+				set -x
+				zypper -n install docker
 			)
 			echo_docker_as_nonroot
 			exit 0
 			;;
 
-		ubuntu|debian)
+		ubuntu|debian|raspbian)
 			export DEBIAN_FRONTEND=noninteractive
 
 			did_apt_get_update=
@@ -248,24 +396,26 @@ do_install() {
 				fi
 			}
 
-			# aufs is preferred over devicemapper; try to ensure the driver is available.
-			if ! grep -q aufs /proc/filesystems && ! $sh_c 'modprobe aufs'; then
-				if uname -r | grep -q -- '-generic' && dpkg -l 'linux-image-*-generic' | grep -q '^ii' 2>/dev/null; then
-					kern_extras="linux-image-extra-$(uname -r) linux-image-extra-virtual"
+			if [ "$lsb_dist" != "raspbian" ]; then
+				# aufs is preferred over devicemapper; try to ensure the driver is available.
+				if ! grep -q aufs /proc/filesystems && ! $sh_c 'modprobe aufs'; then
+					if uname -r | grep -q -- '-generic' && dpkg -l 'linux-image-*-generic' | grep -qE '^ii|^hi' 2>/dev/null; then
+						kern_extras="linux-image-extra-$(uname -r) linux-image-extra-virtual"
 
-					apt_get_update
-					( set -x; $sh_c 'sleep 3; apt-get install -y -q '"$kern_extras" ) || true
+						apt_get_update
+						( set -x; $sh_c 'sleep 3; apt-get install -y -q '"$kern_extras" ) || true
 
-					if ! grep -q aufs /proc/filesystems && ! $sh_c 'modprobe aufs'; then
-						echo >&2 'Warning: tried to install '"$kern_extras"' (for AUFS)'
-						echo >&2 ' but we still have no AUFS.  Docker may not work. Proceeding anyways!'
+						if ! grep -q aufs /proc/filesystems && ! $sh_c 'modprobe aufs'; then
+							echo >&2 'Warning: tried to install '"$kern_extras"' (for AUFS)'
+							echo >&2 ' but we still have no AUFS.  Docker may not work. Proceeding anyways!'
+							( set -x; sleep 10 )
+						fi
+					else
+						echo >&2 'Warning: current kernel is not supported by the linux-image-extra-virtual'
+						echo >&2 ' package.  We have no AUFS support.  Consider installing the packages'
+						echo >&2 ' linux-image-virtual kernel and linux-image-extra-virtual for AUFS support.'
 						( set -x; sleep 10 )
 					fi
-				else
-					echo >&2 'Warning: current kernel is not supported by the linux-image-extra-virtual'
-					echo >&2 ' package.  We have no AUFS support.  Consider installing the packages'
-					echo >&2 ' linux-image-virtual kernel and linux-image-extra-virtual for AUFS support.'
-					( set -x; sleep 10 )
 				fi
 			fi
 
@@ -275,7 +425,7 @@ do_install() {
 				if command -v apparmor_parser >/dev/null 2>&1; then
 					echo 'apparmor is enabled in the kernel and apparmor utils were already installed'
 				else
-					echo 'apparmor is enabled in the kernel, but apparmor_parser missing'
+					echo 'apparmor is enabled in the kernel, but apparmor_parser is missing. Trying to install it..'
 					apt_get_update
 					( set -x; $sh_c 'sleep 3; apt-get install -y -q apparmor' )
 				fi
@@ -292,28 +442,40 @@ do_install() {
 			fi
 			(
 			set -x
-			$sh_c "apt-key adv --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D"
+			for key_server in $key_servers ; do
+				$sh_c "apt-key adv --keyserver hkp://${key_server}:80 --recv-keys ${gpg_fingerprint}" && break
+			done
+			$sh_c "apt-key adv -k ${gpg_fingerprint} >/dev/null"
 			$sh_c "mkdir -p /etc/apt/sources.list.d"
-			$sh_c "echo deb https://apt.dockerproject.org/repo ${lsb_dist}-${dist_version} ${repo} > /etc/apt/sources.list.d/docker.list"
+			$sh_c "echo deb \[arch=$(dpkg --print-architecture)\] ${apt_url}/repo ${lsb_dist}-${dist_version} ${repo} > /etc/apt/sources.list.d/docker.list"
 			$sh_c 'sleep 3; apt-get update; apt-get install -y -q docker-engine'
 			)
 			echo_docker_as_nonroot
 			exit 0
 			;;
 
-		fedora|centos|oraclelinux)
+		fedora|centos|redhat|oraclelinux|photon)
+			if [ "${lsb_dist}" = "redhat" ]; then
+				# we use the centos repository for both redhat and centos releases
+				lsb_dist='centos'
+			fi
 			$sh_c "cat >/etc/yum.repos.d/docker-${repo}.repo" <<-EOF
 			[docker-${repo}-repo]
 			name=Docker ${repo} Repository
-			baseurl=https://yum.dockerproject.org/repo/${repo}/${lsb_dist}/${dist_version}
+			baseurl=${yum_url}/repo/${repo}/${lsb_dist}/${dist_version}
 			enabled=1
 			gpgcheck=1
-			gpgkey=https://yum.dockerproject.org/gpg
+			gpgkey=${yum_url}/gpg
 			EOF
 			if [ "$lsb_dist" = "fedora" ] && [ "$dist_version" -ge "22" ]; then
 				(
 					set -x
 					$sh_c 'sleep 3; dnf -y -q install docker-engine'
+				)
+			elif [ "$lsb_dist" = "photon" ]; then
+				(
+					set -x
+					$sh_c 'sleep 3; tdnf -y install docker-engine'
 				)
 			else
 				(
@@ -361,7 +523,7 @@ do_install() {
 	  a package for Docker.  Please visit the following URL for more detailed
 	  installation instructions:
 
-	    https://docs.docker.com/en/latest/installation/
+	    https://docs.docker.com/engine/installation/
 
 	EOF
 	exit 1

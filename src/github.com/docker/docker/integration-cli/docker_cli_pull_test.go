@@ -1,662 +1,281 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"path/filepath"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/distribution/digest"
+	"github.com/docker/docker/pkg/integration/checker"
 	"github.com/go-check/check"
 )
 
-// See issue docker/docker#8141
-func (s *DockerRegistrySuite) TestPullImageWithAliases(c *check.C) {
-	repoName := fmt.Sprintf("%v/dockercli/busybox", privateRegistryURL)
+// TestPullFromCentralRegistry pulls an image from the central registry and verifies that the client
+// prints all expected output.
+func (s *DockerHubPullSuite) TestPullFromCentralRegistry(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+	out := s.Cmd(c, "pull", "hello-world")
+	defer deleteImages("hello-world")
 
-	repos := []string{}
-	for _, tag := range []string{"recent", "fresh"} {
-		repos = append(repos, fmt.Sprintf("%v:%v", repoName, tag))
+	c.Assert(out, checker.Contains, "Using default tag: latest", check.Commentf("expected the 'latest' tag to be automatically assumed"))
+	c.Assert(out, checker.Contains, "Pulling from library/hello-world", check.Commentf("expected the 'library/' prefix to be automatically assumed"))
+	c.Assert(out, checker.Contains, "Downloaded newer image for hello-world:latest")
+
+	matches := regexp.MustCompile(`Digest: (.+)\n`).FindAllStringSubmatch(out, -1)
+	c.Assert(len(matches), checker.Equals, 1, check.Commentf("expected exactly one image digest in the output"))
+	c.Assert(len(matches[0]), checker.Equals, 2, check.Commentf("unexpected number of submatches for the digest"))
+	_, err := digest.ParseDigest(matches[0][1])
+	c.Check(err, checker.IsNil, check.Commentf("invalid digest %q in output", matches[0][1]))
+
+	// We should have a single entry in images.
+	img := strings.TrimSpace(s.Cmd(c, "images"))
+	splitImg := strings.Split(img, "\n")
+	c.Assert(splitImg, checker.HasLen, 2)
+	c.Assert(splitImg[1], checker.Matches, `hello-world\s+latest.*?`, check.Commentf("invalid output for `docker images` (expected image and tag name"))
+}
+
+// TestPullNonExistingImage pulls non-existing images from the central registry, with different
+// combinations of implicit tag and library prefix.
+func (s *DockerHubPullSuite) TestPullNonExistingImage(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+
+	type entry struct {
+		repo  string
+		alias string
+		tag   string
 	}
 
-	// Tag and push the same image multiple times.
-	for _, repo := range repos {
-		dockerCmd(c, "tag", "busybox", repo)
-		dockerCmd(c, "push", repo)
+	entries := []entry{
+		{"library/asdfasdf", "asdfasdf", "foobar"},
+		{"library/asdfasdf", "library/asdfasdf", "foobar"},
+		{"library/asdfasdf", "asdfasdf", ""},
+		{"library/asdfasdf", "asdfasdf", "latest"},
+		{"library/asdfasdf", "library/asdfasdf", ""},
+		{"library/asdfasdf", "library/asdfasdf", "latest"},
 	}
 
-	// Clear local images store.
-	args := append([]string{"rmi"}, repos...)
-	dockerCmd(c, args...)
+	// The option field indicates "-a" or not.
+	type record struct {
+		e      entry
+		option string
+		out    string
+		err    error
+	}
 
-	// Pull a single tag and verify it doesn't bring down all aliases.
-	dockerCmd(c, "pull", repos[0])
-	dockerCmd(c, "inspect", repos[0])
-	for _, repo := range repos[1:] {
-		if _, _, err := dockerCmdWithError(c, "inspect", repo); err == nil {
-			c.Fatalf("Image %v shouldn't have been pulled down", repo)
+	// Execute 'docker pull' in parallel, pass results (out, err) and
+	// necessary information ("-a" or not, and the image name) to channel.
+	var group sync.WaitGroup
+	recordChan := make(chan record, len(entries)*2)
+	for _, e := range entries {
+		group.Add(1)
+		go func(e entry) {
+			defer group.Done()
+			repoName := e.alias
+			if e.tag != "" {
+				repoName += ":" + e.tag
+			}
+			out, err := s.CmdWithError("pull", repoName)
+			recordChan <- record{e, "", out, err}
+		}(e)
+		if e.tag == "" {
+			// pull -a on a nonexistent registry should fall back as well
+			group.Add(1)
+			go func(e entry) {
+				defer group.Done()
+				out, err := s.CmdWithError("pull", "-a", e.alias)
+				recordChan <- record{e, "-a", out, err}
+			}(e)
 		}
 	}
-}
 
-// pulling library/hello-world should show verified message
-func (s *DockerSuite) TestPullVerified(c *check.C) {
-	c.Skip("Skipping hub dependent test")
+	// Wait for completion
+	group.Wait()
+	close(recordChan)
 
-	// Image must be pulled from central repository to get verified message
-	// unless keychain is manually updated to contain the daemon's sign key.
-
-	verifiedName := "hello-world"
-
-	// pull it
-	expected := "The image you are pulling has been verified"
-	if out, exitCode, err := dockerCmdWithError(c, "pull", verifiedName); err != nil || !strings.Contains(out, expected) {
-		if err != nil || exitCode != 0 {
-			c.Skip(fmt.Sprintf("pulling the '%s' image from the registry has failed: %v", verifiedName, err))
+	// Process the results (out, err).
+	for record := range recordChan {
+		if len(record.option) == 0 {
+			c.Assert(record.err, checker.NotNil, check.Commentf("expected non-zero exit status when pulling non-existing image: %s", record.out))
+			// Hub returns 401 rather than 404 for nonexistent repos over
+			// the v2 protocol - but we should end up falling back to v1,
+			// which does return a 404.
+			tag := record.e.tag
+			if tag == "" {
+				tag = "latest"
+			}
+			c.Assert(record.out, checker.Contains, fmt.Sprintf("Error: image %s:%s not found", record.e.repo, tag), check.Commentf("expected image not found error messages"))
+		} else {
+			// pull -a on a nonexistent registry should fall back as well
+			c.Assert(record.err, checker.NotNil, check.Commentf("expected non-zero exit status when pulling non-existing image: %s", record.out))
+			c.Assert(record.out, checker.Contains, fmt.Sprintf("Error: image %s not found", record.e.repo), check.Commentf("expected image not found error messages"))
+			c.Assert(record.out, checker.Not(checker.Contains), "unauthorized", check.Commentf(`message should not contain "unauthorized"`))
 		}
-		c.Fatalf("pulling a verified image failed. expected: %s\ngot: %s, %v", expected, out, err)
 	}
 
-	// pull it again
-	if out, exitCode, err := dockerCmdWithError(c, "pull", verifiedName); err != nil || strings.Contains(out, expected) {
-		if err != nil || exitCode != 0 {
-			c.Skip(fmt.Sprintf("pulling the '%s' image from the registry has failed: %v", verifiedName, err))
+}
+
+// TestPullFromCentralRegistryImplicitRefParts pulls an image from the central registry and verifies
+// that pulling the same image with different combinations of implicit elements of the the image
+// reference (tag, repository, central registry url, ...) doesn't trigger a new pull nor leads to
+// multiple images.
+func (s *DockerHubPullSuite) TestPullFromCentralRegistryImplicitRefParts(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+
+	// Pull hello-world from v2
+	pullFromV2 := func(ref string) (int, string) {
+		out := s.Cmd(c, "pull", "hello-world")
+		v1Retries := 0
+		for strings.Contains(out, "this image was pulled from a legacy registry") {
+			// Some network errors may cause fallbacks to the v1
+			// protocol, which would violate the test's assumption
+			// that it will get the same images. To make the test
+			// more robust against these network glitches, allow a
+			// few retries if we end up with a v1 pull.
+
+			if v1Retries > 2 {
+				c.Fatalf("too many v1 fallback incidents when pulling %s", ref)
+			}
+
+			s.Cmd(c, "rmi", ref)
+			out = s.Cmd(c, "pull", ref)
+
+			v1Retries++
 		}
-		c.Fatalf("pulling a verified image failed. unexpected verify message\ngot: %s, %v", out, err)
+
+		return v1Retries, out
 	}
 
-}
+	pullFromV2("hello-world")
+	defer deleteImages("hello-world")
 
-// pulling an image from the central registry should work
-func (s *DockerSuite) TestPullImageFromCentralRegistry(c *check.C) {
-	testRequires(c, Network)
+	s.Cmd(c, "tag", "hello-world", "hello-world-backup")
 
-	dockerCmd(c, "pull", "hello-world")
-}
-
-// pulling a non-existing image from the central registry should return a non-zero exit code
-func (s *DockerSuite) TestPullNonExistingImage(c *check.C) {
-	testRequires(c, Network)
-
-	name := "sadfsadfasdf"
-	out, _, err := dockerCmdWithError(c, "pull", name)
-
-	if err == nil || !strings.Contains(out, fmt.Sprintf("Error: image library/%s:latest not found", name)) {
-		c.Fatalf("expected non-zero exit status when pulling non-existing image: %s", out)
-	}
-}
-
-// pulling an image from the central registry using official names should work
-// ensure all pulls result in the same image
-func (s *DockerSuite) TestPullImageOfficialNames(c *check.C) {
-	testRequires(c, Network)
-
-	names := []string{
+	for _, ref := range []string{
+		"hello-world",
+		"hello-world:latest",
 		"library/hello-world",
+		"library/hello-world:latest",
 		"docker.io/library/hello-world",
 		"index.docker.io/library/hello-world",
-	}
-	for _, name := range names {
-		out, exitCode, err := dockerCmdWithError(c, "pull", name)
-		if err != nil || exitCode != 0 {
-			c.Errorf("pulling the '%s' image from the registry has failed: %s", name, err)
-			continue
+	} {
+		var out string
+		for {
+			var v1Retries int
+			v1Retries, out = pullFromV2(ref)
+
+			// Keep repeating the test case until we don't hit a v1
+			// fallback case. We won't get the right "Image is up
+			// to date" message if the local image was replaced
+			// with one pulled from v1.
+			if v1Retries == 0 {
+				break
+			}
+			s.Cmd(c, "rmi", ref)
+			s.Cmd(c, "tag", "hello-world-backup", "hello-world")
 		}
-
-		// ensure we don't have multiple image names.
-		out, _ = dockerCmd(c, "images")
-		if strings.Contains(out, name) {
-			c.Errorf("images should not have listed '%s'", name)
-		}
+		c.Assert(out, checker.Contains, "Image is up to date for hello-world:latest")
 	}
+
+	s.Cmd(c, "rmi", "hello-world-backup")
+
+	// We should have a single entry in images.
+	img := strings.TrimSpace(s.Cmd(c, "images"))
+	splitImg := strings.Split(img, "\n")
+	c.Assert(splitImg, checker.HasLen, 2)
+	c.Assert(splitImg[1], checker.Matches, `hello-world\s+latest.*?`, check.Commentf("invalid output for `docker images` (expected image and tag name"))
 }
 
-func (s *DockerSuite) TestPullScratchNotAllowed(c *check.C) {
-	testRequires(c, Network)
-
-	out, exitCode, err := dockerCmdWithError(c, "pull", "scratch")
-	if err == nil {
-		c.Fatal("expected pull of scratch to fail, but it didn't")
-	}
-	if exitCode != 1 {
-		c.Fatalf("pulling scratch expected exit code 1, got %d", exitCode)
-	}
-	if strings.Contains(out, "Pulling repository scratch") {
-		c.Fatalf("pulling scratch should not have begun: %s", out)
-	}
-	if !strings.Contains(out, "'scratch' is a reserved name") {
-		c.Fatalf("unexpected output pulling scratch: %s", out)
-	}
+// TestPullScratchNotAllowed verifies that pulling 'scratch' is rejected.
+func (s *DockerHubPullSuite) TestPullScratchNotAllowed(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+	out, err := s.CmdWithError("pull", "scratch")
+	c.Assert(err, checker.NotNil, check.Commentf("expected pull of scratch to fail"))
+	c.Assert(out, checker.Contains, "'scratch' is a reserved name")
+	c.Assert(out, checker.Not(checker.Contains), "Pulling repository scratch")
 }
 
-// pulling an image with --all-tags=true
-func (s *DockerSuite) TestPullImageWithAllTagFromCentralRegistry(c *check.C) {
-	testRequires(c, Network)
+// TestPullAllTagsFromCentralRegistry pulls using `all-tags` for a given image and verifies that it
+// results in more images than a naked pull.
+func (s *DockerHubPullSuite) TestPullAllTagsFromCentralRegistry(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+	s.Cmd(c, "pull", "busybox")
+	outImageCmd := s.Cmd(c, "images", "busybox")
+	splitOutImageCmd := strings.Split(strings.TrimSpace(outImageCmd), "\n")
+	c.Assert(splitOutImageCmd, checker.HasLen, 2)
 
-	dockerCmd(c, "pull", "busybox")
+	s.Cmd(c, "pull", "--all-tags=true", "busybox")
+	outImageAllTagCmd := s.Cmd(c, "images", "busybox")
+	linesCount := strings.Count(outImageAllTagCmd, "\n")
+	c.Assert(linesCount, checker.GreaterThan, 2, check.Commentf("pulling all tags should provide more than two images, got %s", outImageAllTagCmd))
 
-	outImageCmd, _ := dockerCmd(c, "images", "busybox")
-
-	dockerCmd(c, "pull", "--all-tags=true", "busybox")
-
-	outImageAllTagCmd, _ := dockerCmd(c, "images", "busybox")
-
-	if strings.Count(outImageCmd, "busybox") >= strings.Count(outImageAllTagCmd, "busybox") {
-		c.Fatalf("Pulling with all tags should get more images")
-	}
-
-	// FIXME has probably no effect (tags already pushed)
-	dockerCmd(c, "pull", "-a", "busybox")
-
-	outImageAllTagCmd, _ = dockerCmd(c, "images", "busybox")
-
-	if strings.Count(outImageCmd, "busybox") >= strings.Count(outImageAllTagCmd, "busybox") {
-		c.Fatalf("Pulling with all tags should get more images")
-	}
-}
-
-func (s *DockerTrustSuite) TestTrustedPull(c *check.C) {
-	repoName := s.setupTrustedImage(c, "trusted-pull")
-
-	// Try pull
-	pullCmd := exec.Command(dockerBinary, "pull", repoName)
-	s.trustedCmd(pullCmd)
-	out, _, err := runCommandWithOutput(pullCmd)
-	if err != nil {
-		c.Fatalf("Error running trusted pull: %s\n%s", err, out)
-	}
-
-	if !strings.Contains(string(out), "Tagging") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-
-	dockerCmd(c, "rmi", repoName)
-
-	// Try untrusted pull to ensure we pushed the tag to the registry
-	pullCmd = exec.Command(dockerBinary, "pull", "--disable-content-trust=true", repoName)
-	s.trustedCmd(pullCmd)
-	out, _, err = runCommandWithOutput(pullCmd)
-	if err != nil {
-		c.Fatalf("Error running trusted pull: %s\n%s", err, out)
-	}
-
-	if !strings.Contains(string(out), "Status: Downloaded") {
-		c.Fatalf("Missing expected output on trusted pull with --disable-content-trust:\n%s", out)
-	}
-}
-
-func (s *DockerTrustSuite) TestTrustedIsolatedPull(c *check.C) {
-	repoName := s.setupTrustedImage(c, "trusted-isolatd-pull")
-
-	// Try pull (run from isolated directory without trust information)
-	pullCmd := exec.Command(dockerBinary, "--config", "/tmp/docker-isolated", "pull", repoName)
-	s.trustedCmd(pullCmd)
-	out, _, err := runCommandWithOutput(pullCmd)
-	if err != nil {
-		c.Fatalf("Error running trusted pull: %s\n%s", err, out)
-	}
-
-	if !strings.Contains(string(out), "Tagging") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-
-	dockerCmd(c, "rmi", repoName)
-}
-
-func (s *DockerTrustSuite) TestUntrustedPull(c *check.C) {
-	repoName := fmt.Sprintf("%v/dockercli/trusted:latest", privateRegistryURL)
-	// tag the image and upload it to the private registry
-	dockerCmd(c, "tag", "busybox", repoName)
-	dockerCmd(c, "push", repoName)
-	dockerCmd(c, "rmi", repoName)
-
-	// Try trusted pull on untrusted tag
-	pullCmd := exec.Command(dockerBinary, "pull", repoName)
-	s.trustedCmd(pullCmd)
-	out, _, err := runCommandWithOutput(pullCmd)
-	if err == nil {
-		c.Fatalf("Error expected when running trusted pull with:\n%s", out)
-	}
-
-	if !strings.Contains(string(out), "no trust data available") {
-		c.Fatalf("Missing expected output on trusted pull:\n%s", out)
-	}
-}
-
-func (s *DockerTrustSuite) TestPullWhenCertExpired(c *check.C) {
-	c.Skip("Currently changes system time, causing instability")
-	repoName := s.setupTrustedImage(c, "trusted-cert-expired")
-
-	// Certificates have 10 years of expiration
-	elevenYearsFromNow := time.Now().Add(time.Hour * 24 * 365 * 11)
-
-	runAtDifferentDate(elevenYearsFromNow, func() {
-		// Try pull
-		pullCmd := exec.Command(dockerBinary, "pull", repoName)
-		s.trustedCmd(pullCmd)
-		out, _, err := runCommandWithOutput(pullCmd)
-		if err == nil {
-			c.Fatalf("Error running trusted pull in the distant future: %s\n%s", err, out)
-		}
-
-		if !strings.Contains(string(out), "could not validate the path to a trusted root") {
-			c.Fatalf("Missing expected output on trusted pull in the distant future:\n%s", out)
-		}
-	})
-
-	runAtDifferentDate(elevenYearsFromNow, func() {
-		// Try pull
-		pullCmd := exec.Command(dockerBinary, "pull", "--disable-content-trust", repoName)
-		s.trustedCmd(pullCmd)
-		out, _, err := runCommandWithOutput(pullCmd)
-		if err != nil {
-			c.Fatalf("Error running untrusted pull in the distant future: %s\n%s", err, out)
-		}
-
-		if !strings.Contains(string(out), "Status: Downloaded") {
-			c.Fatalf("Missing expected output on untrusted pull in the distant future:\n%s", out)
-		}
-	})
-}
-
-func (s *DockerTrustSuite) TestTrustedPullFromBadTrustServer(c *check.C) {
-	repoName := fmt.Sprintf("%v/dockerclievilpull/trusted:latest", privateRegistryURL)
-	evilLocalConfigDir, err := ioutil.TempDir("", "evil-local-config-dir")
-	if err != nil {
-		c.Fatalf("Failed to create local temp dir")
-	}
-
-	// tag the image and upload it to the private registry
-	dockerCmd(c, "tag", "busybox", repoName)
-
-	pushCmd := exec.Command(dockerBinary, "push", repoName)
-	s.trustedCmd(pushCmd)
-	out, _, err := runCommandWithOutput(pushCmd)
-	if err != nil {
-		c.Fatalf("Error running trusted push: %s\n%s", err, out)
-	}
-	if !strings.Contains(string(out), "Signing and pushing trust metadata") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-
-	dockerCmd(c, "rmi", repoName)
-
-	// Try pull
-	pullCmd := exec.Command(dockerBinary, "pull", repoName)
-	s.trustedCmd(pullCmd)
-	out, _, err = runCommandWithOutput(pullCmd)
-	if err != nil {
-		c.Fatalf("Error running trusted pull: %s\n%s", err, out)
-	}
-
-	if !strings.Contains(string(out), "Tagging") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-
-	dockerCmd(c, "rmi", repoName)
-
-	// Kill the notary server, start a new "evil" one.
-	s.not.Close()
-	s.not, err = newTestNotary(c)
-	if err != nil {
-		c.Fatalf("Restarting notary server failed.")
-	}
-
-	// In order to make an evil server, lets re-init a client (with a different trust dir) and push new data.
-	// tag an image and upload it to the private registry
-	dockerCmd(c, "--config", evilLocalConfigDir, "tag", "busybox", repoName)
-
-	// Push up to the new server
-	pushCmd = exec.Command(dockerBinary, "--config", evilLocalConfigDir, "push", repoName)
-	s.trustedCmd(pushCmd)
-	out, _, err = runCommandWithOutput(pushCmd)
-	if err != nil {
-		c.Fatalf("Error running trusted push: %s\n%s", err, out)
-	}
-	if !strings.Contains(string(out), "Signing and pushing trust metadata") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-
-	// Now, try pulling with the original client from this new trust server. This should fail.
-	pullCmd = exec.Command(dockerBinary, "pull", repoName)
-	s.trustedCmd(pullCmd)
-	out, _, err = runCommandWithOutput(pullCmd)
-	if err == nil {
-		c.Fatalf("Expected to fail on this pull due to different remote data: %s\n%s", err, out)
-	}
-
-	if !strings.Contains(string(out), "failed to validate data with current trusted certificates") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-}
-
-func (s *DockerTrustSuite) TestTrustedPullWithExpiredSnapshot(c *check.C) {
-	c.Skip("Currently changes system time, causing instability")
-	repoName := fmt.Sprintf("%v/dockercliexpiredtimestamppull/trusted:latest", privateRegistryURL)
-	// tag the image and upload it to the private registry
-	dockerCmd(c, "tag", "busybox", repoName)
-
-	// Push with default passphrases
-	pushCmd := exec.Command(dockerBinary, "push", repoName)
-	s.trustedCmd(pushCmd)
-	out, _, err := runCommandWithOutput(pushCmd)
-	if err != nil {
-		c.Fatalf("trusted push failed: %s\n%s", err, out)
-	}
-
-	if !strings.Contains(string(out), "Signing and pushing trust metadata") {
-		c.Fatalf("Missing expected output on trusted push:\n%s", out)
-	}
-
-	dockerCmd(c, "rmi", repoName)
-
-	// Snapshots last for three years. This should be expired
-	fourYearsLater := time.Now().Add(time.Hour * 24 * 365 * 4)
-
-	// Should succeed because the server transparently re-signs one
-	runAtDifferentDate(fourYearsLater, func() {
-		// Try pull
-		pullCmd := exec.Command(dockerBinary, "pull", repoName)
-		s.trustedCmd(pullCmd)
-		out, _, err = runCommandWithOutput(pullCmd)
-		if err == nil {
-			c.Fatalf("Missing expected error running trusted pull with expired snapshots")
-		}
-
-		if !strings.Contains(string(out), "repository out-of-date") {
-			c.Fatalf("Missing expected output on trusted pull with expired snapshot:\n%s", out)
-		}
-	})
-}
-
-// Test that pull continues after client has disconnected. #15589
-func (s *DockerTrustSuite) TestPullClientDisconnect(c *check.C) {
-	testRequires(c, Network)
-
-	repoName := "hello-world:latest"
-
-	dockerCmdWithError(c, "rmi", repoName) // clean just in case
-
-	pullCmd := exec.Command(dockerBinary, "pull", repoName)
-
-	stdout, err := pullCmd.StdoutPipe()
-	c.Assert(err, check.IsNil)
-
-	err = pullCmd.Start()
-	c.Assert(err, check.IsNil)
-
-	// cancel as soon as we get some output
-	buf := make([]byte, 10)
-	_, err = stdout.Read(buf)
-	c.Assert(err, check.IsNil)
-
-	err = pullCmd.Process.Kill()
-	c.Assert(err, check.IsNil)
-
-	maxAttempts := 20
-	for i := 0; ; i++ {
-		if _, _, err := dockerCmdWithError(c, "inspect", repoName); err == nil {
+	// Verify that the line for 'busybox:latest' is left unchanged.
+	var latestLine string
+	for _, line := range strings.Split(outImageAllTagCmd, "\n") {
+		if strings.HasPrefix(line, "busybox") && strings.Contains(line, "latest") {
+			latestLine = line
 			break
 		}
-		if i >= maxAttempts {
-			c.Fatal("Timeout reached. Image was not pulled after client disconnected.")
-		}
-		time.Sleep(500 * time.Millisecond)
 	}
+	c.Assert(latestLine, checker.Not(checker.Equals), "", check.Commentf("no entry for busybox:latest found after pulling all tags"))
+	splitLatest := strings.Fields(latestLine)
+	splitCurrent := strings.Fields(splitOutImageCmd[1])
 
+	// Clear relative creation times, since these can easily change between
+	// two invocations of "docker images". Without this, the test can fail
+	// like this:
+	// ... obtained []string = []string{"busybox", "latest", "d9551b4026f0", "27", "minutes", "ago", "1.113", "MB"}
+	// ... expected []string = []string{"busybox", "latest", "d9551b4026f0", "26", "minutes", "ago", "1.113", "MB"}
+	splitLatest[3] = ""
+	splitLatest[4] = ""
+	splitLatest[5] = ""
+	splitCurrent[3] = ""
+	splitCurrent[4] = ""
+	splitCurrent[5] = ""
+
+	c.Assert(splitLatest, checker.DeepEquals, splitCurrent, check.Commentf("busybox:latest was changed after pulling all tags"))
 }
 
-type idAndParent struct {
-	ID     string
-	Parent string
+// TestPullClientDisconnect kills the client during a pull operation and verifies that the operation
+// gets cancelled.
+//
+// Ref: docker/docker#15589
+func (s *DockerHubPullSuite) TestPullClientDisconnect(c *check.C) {
+	testRequires(c, DaemonIsLinux)
+	repoName := "hello-world:latest"
+
+	pullCmd := s.MakeCmd("pull", repoName)
+	stdout, err := pullCmd.StdoutPipe()
+	c.Assert(err, checker.IsNil)
+	err = pullCmd.Start()
+	c.Assert(err, checker.IsNil)
+
+	// Cancel as soon as we get some output.
+	buf := make([]byte, 10)
+	_, err = stdout.Read(buf)
+	c.Assert(err, checker.IsNil)
+
+	err = pullCmd.Process.Kill()
+	c.Assert(err, checker.IsNil)
+
+	time.Sleep(2 * time.Second)
+	_, err = s.CmdWithError("inspect", repoName)
+	c.Assert(err, checker.NotNil, check.Commentf("image was pulled after client disconnected"))
 }
 
-func inspectImage(c *check.C, imageRef string) idAndParent {
-	out, _ := dockerCmd(c, "inspect", imageRef)
-	var inspectOutput []idAndParent
-	err := json.Unmarshal([]byte(out), &inspectOutput)
-	if err != nil {
-		c.Fatal(err)
-	}
-
-	return inspectOutput[0]
+func (s *DockerRegistryAuthHtpasswdSuite) TestPullNoCredentialsNotFound(c *check.C) {
+	// we don't care about the actual image, we just want to see image not found
+	// because that means v2 call returned 401 and we fell back to v1 which usually
+	// gives a 404 (in this case the test registry doesn't handle v1 at all)
+	out, _, err := dockerCmdWithError("pull", privateRegistryURL+"/busybox")
+	c.Assert(err, check.NotNil, check.Commentf(out))
+	c.Assert(out, checker.Contains, "Error: image busybox:latest not found")
 }
 
-func imageID(c *check.C, imageRef string) string {
-	return inspectImage(c, imageRef).ID
-}
-
-func imageParent(c *check.C, imageRef string) string {
-	return inspectImage(c, imageRef).Parent
-}
-
-// TestPullMigration verifies that pulling an image based on layers
-// that already exists locally will reuse those existing layers.
-func (s *DockerRegistrySuite) TestPullMigration(c *check.C) {
-	repoName := privateRegistryURL + "/dockercli/migration"
-
-	baseImage := repoName + ":base"
-	_, err := buildImage(baseImage, fmt.Sprintf(`
-	    FROM scratch
-	    ENV IMAGE base
-	    CMD echo %s
-	`, baseImage), true)
-	if err != nil {
-		c.Fatal(err)
-	}
-
-	baseIDBeforePush := imageID(c, baseImage)
-	baseParentBeforePush := imageParent(c, baseImage)
-
-	derivedImage := repoName + ":derived"
-	_, err = buildImage(derivedImage, fmt.Sprintf(`
-	    FROM %s
-	    CMD echo %s
-	`, baseImage, derivedImage), true)
-	if err != nil {
-		c.Fatal(err)
-	}
-
-	derivedIDBeforePush := imageID(c, derivedImage)
-
-	dockerCmd(c, "push", derivedImage)
-
-	// Remove derived image from the local store
-	dockerCmd(c, "rmi", derivedImage)
-
-	// Repull
-	dockerCmd(c, "pull", derivedImage)
-
-	// Check that the parent of this pulled image is the original base
-	// image
-	derivedIDAfterPull1 := imageID(c, derivedImage)
-	derivedParentAfterPull1 := imageParent(c, derivedImage)
-
-	if derivedIDAfterPull1 == derivedIDBeforePush {
-		c.Fatal("image's ID should have changed on after deleting and pulling")
-	}
-
-	if derivedParentAfterPull1 != baseIDBeforePush {
-		c.Fatalf("pulled image's parent ID (%s) does not match base image's ID (%s)", derivedParentAfterPull1, baseIDBeforePush)
-	}
-
-	// Confirm that repushing and repulling does not change the computed ID
-	dockerCmd(c, "push", derivedImage)
-	dockerCmd(c, "rmi", derivedImage)
-	dockerCmd(c, "pull", derivedImage)
-
-	derivedIDAfterPull2 := imageID(c, derivedImage)
-	derivedParentAfterPull2 := imageParent(c, derivedImage)
-
-	if derivedIDAfterPull2 != derivedIDAfterPull1 {
-		c.Fatal("image's ID unexpectedly changed after a repush/repull")
-	}
-
-	if derivedParentAfterPull2 != baseIDBeforePush {
-		c.Fatalf("pulled image's parent ID (%s) does not match base image's ID (%s)", derivedParentAfterPull2, baseIDBeforePush)
-	}
-
-	// Remove everything, repull, and make sure everything uses computed IDs
-	dockerCmd(c, "rmi", baseImage, derivedImage)
-	dockerCmd(c, "pull", derivedImage)
-
-	derivedIDAfterPull3 := imageID(c, derivedImage)
-	derivedParentAfterPull3 := imageParent(c, derivedImage)
-	derivedGrandparentAfterPull3 := imageParent(c, derivedParentAfterPull3)
-
-	if derivedIDAfterPull3 != derivedIDAfterPull1 {
-		c.Fatal("image's ID unexpectedly changed after a second repull")
-	}
-
-	if derivedParentAfterPull3 == baseIDBeforePush {
-		c.Fatalf("pulled image's parent ID (%s) should not match base image's original ID (%s)", derivedParentAfterPull3, derivedIDBeforePush)
-	}
-
-	if derivedGrandparentAfterPull3 == baseParentBeforePush {
-		c.Fatal("base image's parent ID should have been rewritten on pull")
-	}
-}
-
-// TestPullMigrationRun verifies that pulling an image based on layers
-// that already exists locally will result in an image that runs properly.
-func (s *DockerRegistrySuite) TestPullMigrationRun(c *check.C) {
-	type idAndParent struct {
-		ID     string
-		Parent string
-	}
-
-	derivedImage := privateRegistryURL + "/dockercli/migration-run"
-	baseImage := "busybox"
-
-	_, err := buildImage(derivedImage, fmt.Sprintf(`
-	    FROM %s
-	    RUN dd if=/dev/zero of=/file bs=1024 count=1024
-	    CMD echo %s
-	`, baseImage, derivedImage), true)
-	if err != nil {
-		c.Fatal(err)
-	}
-
-	baseIDBeforePush := imageID(c, baseImage)
-	derivedIDBeforePush := imageID(c, derivedImage)
-
-	dockerCmd(c, "push", derivedImage)
-
-	// Remove derived image from the local store
-	dockerCmd(c, "rmi", derivedImage)
-
-	// Repull
-	dockerCmd(c, "pull", derivedImage)
-
-	// Check that this pulled image is based on the original base image
-	derivedIDAfterPull1 := imageID(c, derivedImage)
-	derivedParentAfterPull1 := imageParent(c, imageParent(c, derivedImage))
-
-	if derivedIDAfterPull1 == derivedIDBeforePush {
-		c.Fatal("image's ID should have changed on after deleting and pulling")
-	}
-
-	if derivedParentAfterPull1 != baseIDBeforePush {
-		c.Fatalf("pulled image's parent ID (%s) does not match base image's ID (%s)", derivedParentAfterPull1, baseIDBeforePush)
-	}
-
-	// Make sure the image runs correctly
-	out, _ := dockerCmd(c, "run", "--rm", derivedImage)
-	if strings.TrimSpace(out) != derivedImage {
-		c.Fatalf("expected %s; got %s", derivedImage, out)
-	}
-
-	// Confirm that repushing and repulling does not change the computed ID
-	dockerCmd(c, "push", derivedImage)
-	dockerCmd(c, "rmi", derivedImage)
-	dockerCmd(c, "pull", derivedImage)
-
-	derivedIDAfterPull2 := imageID(c, derivedImage)
-	derivedParentAfterPull2 := imageParent(c, imageParent(c, derivedImage))
-
-	if derivedIDAfterPull2 != derivedIDAfterPull1 {
-		c.Fatal("image's ID unexpectedly changed after a repush/repull")
-	}
-
-	if derivedParentAfterPull2 != baseIDBeforePush {
-		c.Fatalf("pulled image's parent ID (%s) does not match base image's ID (%s)", derivedParentAfterPull2, baseIDBeforePush)
-	}
-
-	// Make sure the image still runs
-	out, _ = dockerCmd(c, "run", "--rm", derivedImage)
-	if strings.TrimSpace(out) != derivedImage {
-		c.Fatalf("expected %s; got %s", derivedImage, out)
-	}
-}
-
-// TestPullConflict provides coverage of the situation where a computed
-// strongID conflicts with some unverifiable data in the graph.
-func (s *DockerRegistrySuite) TestPullConflict(c *check.C) {
-	repoName := privateRegistryURL + "/dockercli/conflict"
-
-	_, err := buildImage(repoName, `
-	    FROM scratch
-	    ENV IMAGE conflict
-	    CMD echo conflict
-	`, true)
-	if err != nil {
-		c.Fatal(err)
-	}
-
-	dockerCmd(c, "push", repoName)
-
-	// Pull to make it content-addressable
-	dockerCmd(c, "rmi", repoName)
-	dockerCmd(c, "pull", repoName)
-
-	IDBeforeLoad := imageID(c, repoName)
-
-	// Load/save to turn this into an unverified image with the same ID
-	tmpDir, err := ioutil.TempDir("", "conflict-save-output")
-	if err != nil {
-		c.Errorf("failed to create temporary directory: %s", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	tarFile := filepath.Join(tmpDir, "repo.tar")
-
-	dockerCmd(c, "save", "-o", tarFile, repoName)
-	dockerCmd(c, "rmi", repoName)
-	dockerCmd(c, "load", "-i", tarFile)
-
-	// Check that the the ID is the same after save/load.
-	IDAfterLoad := imageID(c, repoName)
-
-	if IDAfterLoad != IDBeforeLoad {
-		c.Fatal("image's ID should be the same after save/load")
-	}
-
-	// Repull
-	dockerCmd(c, "pull", repoName)
-
-	// Check that the ID is now different because of the conflict.
-	IDAfterPull1 := imageID(c, repoName)
-
-	// Expect the new ID to be SHA256(oldID)
-	expectedIDDigest, err := digest.FromBytes([]byte(IDBeforeLoad))
-	if err != nil {
-		c.Fatalf("digest error: %v", err)
-	}
-	expectedID := expectedIDDigest.Hex()
-	if IDAfterPull1 != expectedID {
-		c.Fatalf("image's ID should have changed on pull to %s (got %s)", expectedID, IDAfterPull1)
-	}
-
-	// A second pull should use the new ID again.
-	dockerCmd(c, "pull", repoName)
-
-	IDAfterPull2 := imageID(c, repoName)
-
-	if IDAfterPull2 != IDAfterPull1 {
-		c.Fatal("image's ID unexpectedly changed after a repull")
-	}
+// Regression test for https://github.com/docker/docker/issues/26429
+func (s *DockerSuite) TestPullLinuxImageFailsOnWindows(c *check.C) {
+	testRequires(c, DaemonIsWindows, Network)
+	_, _, err := dockerCmdWithError("pull", "ubuntu")
+	c.Assert(err.Error(), checker.Contains, "cannot be used on this platform")
 }
