@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/daemon/events"
 	"github.com/docker/docker/daemon/graphdriver"
 	_ "github.com/docker/docker/daemon/graphdriver/vfs" // import the vfs driver so it is used in the tests
+	"github.com/docker/docker/graph/tags"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/utils"
 )
@@ -52,11 +53,11 @@ func fakeTar() (io.Reader, error) {
 }
 
 func mkTestTagStore(root string, t *testing.T) *TagStore {
-	driver, err := graphdriver.New(root, nil)
+	driver, err := graphdriver.New(root, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	graph, err := NewGraph(root, driver)
+	graph, err := NewGraph(root, driver, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +75,7 @@ func mkTestTagStore(root string, t *testing.T) *TagStore {
 		t.Fatal(err)
 	}
 	img := &image.Image{ID: testOfficialImageID}
-	if err := graph.Register(v1ImageDescriptor{img}, officialArchive); err != nil {
+	if err := graph.Register(v1Descriptor{img}, officialArchive); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Tag(testOfficialImageName, "", testOfficialImageID, false); err != nil {
@@ -85,7 +86,7 @@ func mkTestTagStore(root string, t *testing.T) *TagStore {
 		t.Fatal(err)
 	}
 	img = &image.Image{ID: testPrivateImageID}
-	if err := graph.Register(v1ImageDescriptor{img}, privateArchive); err != nil {
+	if err := graph.Register(v1Descriptor{img}, privateArchive); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Tag(testPrivateImageName, "", testPrivateImageID, false); err != nil {
@@ -112,17 +113,17 @@ func TestLookupImage(t *testing.T) {
 		testOfficialImageName + ":" + testOfficialImageID,
 		testOfficialImageName + ":" + testOfficialImageIDShort,
 		testOfficialImageName,
-		testOfficialImageName + ":" + DEFAULTTAG,
+		testOfficialImageName + ":" + tags.DefaultTag,
 		"docker.io/" + testOfficialImageName,
-		"docker.io/" + testOfficialImageName + ":" + DEFAULTTAG,
+		"docker.io/" + testOfficialImageName + ":" + tags.DefaultTag,
 		"index.docker.io/" + testOfficialImageName,
-		"index.docker.io/" + testOfficialImageName + ":" + DEFAULTTAG,
+		"index.docker.io/" + testOfficialImageName + ":" + tags.DefaultTag,
 		"library/" + testOfficialImageName,
-		"library/" + testOfficialImageName + ":" + DEFAULTTAG,
+		"library/" + testOfficialImageName + ":" + tags.DefaultTag,
 		"docker.io/library/" + testOfficialImageName,
-		"docker.io/library/" + testOfficialImageName + ":" + DEFAULTTAG,
+		"docker.io/library/" + testOfficialImageName + ":" + tags.DefaultTag,
 		"index.docker.io/library/" + testOfficialImageName,
-		"index.docker.io/library/" + testOfficialImageName + ":" + DEFAULTTAG,
+		"index.docker.io/library/" + testOfficialImageName + ":" + tags.DefaultTag,
 	}
 
 	privateLookups := []string{
@@ -131,7 +132,7 @@ func TestLookupImage(t *testing.T) {
 		testPrivateImageName + ":" + testPrivateImageID,
 		testPrivateImageName + ":" + testPrivateImageIDShort,
 		testPrivateImageName,
-		testPrivateImageName + ":" + DEFAULTTAG,
+		testPrivateImageName + ":" + tags.DefaultTag,
 	}
 
 	invalidLookups := []string{

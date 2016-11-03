@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/digest"
+	derr "github.com/docker/docker/errors"
 	"github.com/docker/docker/pkg/version"
 	"github.com/docker/docker/runconfig"
 )
@@ -19,9 +20,9 @@ var validHex = regexp.MustCompile(`^([a-f0-9]{64})$`)
 // blank fields.
 var noFallbackMinVersion = version.Version("1.8.3")
 
-// ImageDescriptor provides the information necessary to register an image in
+// Descriptor provides the information necessary to register an image in
 // the graph.
-type ImageDescriptor interface {
+type Descriptor interface {
 	ID() string
 	Parent() string
 	MarshalConfig() ([]byte, error)
@@ -61,7 +62,7 @@ type Image struct {
 	LayerID digest.Digest `json:"layer_id,omitempty"`
 }
 
-// Build an Image object from raw json data
+// NewImgJSON creates an Image configuration from json.
 func NewImgJSON(src []byte) (*Image, error) {
 	ret := &Image{}
 
@@ -72,10 +73,10 @@ func NewImgJSON(src []byte) (*Image, error) {
 	return ret, nil
 }
 
-// Check wheather id is a valid image ID or not
+// ValidateID checks whether an ID string is a valid image ID.
 func ValidateID(id string) error {
 	if ok := validHex.MatchString(id); !ok {
-		return fmt.Errorf("image ID '%s' is invalid", id)
+		return derr.ErrorCodeInvalidImageID.WithArgs(id)
 	}
 	return nil
 }

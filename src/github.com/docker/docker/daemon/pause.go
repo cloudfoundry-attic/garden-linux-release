@@ -1,6 +1,8 @@
 package daemon
 
-import "fmt"
+import (
+	derr "github.com/docker/docker/errors"
+)
 
 // ContainerPause pauses a container
 func (daemon *Daemon) ContainerPause(name string) error {
@@ -9,8 +11,8 @@ func (daemon *Daemon) ContainerPause(name string) error {
 		return err
 	}
 
-	if err := container.Pause(); err != nil {
-		return fmt.Errorf("Cannot pause container %s: %s", name, err)
+	if err := container.pause(); err != nil {
+		return derr.ErrorCodePauseError.WithArgs(name, err)
 	}
 
 	return nil

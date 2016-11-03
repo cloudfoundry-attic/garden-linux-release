@@ -15,6 +15,7 @@ set -e
 # ... and so on and so forth for the builds created by hack/make/build-deb
 
 : ${DOCKER_RELEASE_DIR:=$DEST}
+: ${GPG_KEYID:=releasedocker}
 APTDIR=$DOCKER_RELEASE_DIR/apt/repo
 
 # setup the apt repo (if it does not exist)
@@ -24,22 +25,7 @@ mkdir -p "$APTDIR/conf" "$APTDIR/db"
 arches=( amd64 i386 )
 components=( main testing experimental )
 
-# create/update distributions file
-if [ ! -f "$APTDIR/conf/distributions" ]; then
-	for suite in $(exec contrib/reprepro/suites.sh); do
-		cat <<-EOF
-		Origin: Docker
-		Suite: $suite
-		Codename: $suite
-		Architectures: ${arches[*]}
-		Components: ${components[*]}
-		Description: Docker APT Repository
-
-		EOF
-	done > "$APTDIR/conf/distributions"
-fi
-
-# create/update distributions file
+# create/update apt-ftparchive file
 if [ ! -f "$APTDIR/conf/apt-ftparchive.conf" ]; then
 	cat <<-EOF > "$APTDIR/conf/apt-ftparchive.conf"
 	Dir {
@@ -84,18 +70,15 @@ if [ ! -f "$APTDIR/conf/docker-engine-release.conf" ]; then
 	EOF
 fi
 
-# set the component and priority for the version being released
+# set the component for the version being released
 component="main"
-priority=700
 
 if [[ "$VERSION" == *-rc* ]]; then
 	component="testing"
-	priority=650
 fi
 
 if [ $DOCKER_EXPERIMENTAL ] || [[ "$VERSION" == *-dev ]] || [ -n "$(git status --porcelain)" ]; then
 	component="experimental"
-	priority=600
 fi
 
 # release the debs
@@ -103,19 +86,18 @@ for dir in contrib/builder/deb/*/; do
 	version="$(basename "$dir")"
 	codename="${version//debootstrap-}"
 
-	# add the deb for each component for the distro version with reprepro
 	DEBFILE=( "bundles/$VERSION/build-deb/$version/docker-engine"*.deb )
 
 	# if we have a $GPG_PASSPHRASE we may as well
-	# dpkg-sign before reprepro
+	# dpkg-sign before copying the deb into the pool
 	if [ ! -z "$GPG_PASSPHRASE" ]; then
 		dpkg-sig -g "--passphrase $GPG_PASSPHRASE" \
-			-k releasedocker --sign builder "${DEBFILE[@]}"
+			-k "$GPG_KEYID" --sign builder "${DEBFILE[@]}"
 	fi
 
-	reprepro -v --keepunreferencedfiles \
-		-S docker-engine -P "$priority" -C "$component" \
-		-b "$APTDIR" includedeb "$codename" "${DEBFILE[@]}"
+	# add the deb for each component for the distro version into the pool
+	mkdir -p "$APTDIR/pool/$component/d/docker-engine/"
+	cp "${DEBFILE[@]}" "$APTDIR/pool/$component/d/docker-engine/"
 
 	# update the filelist for this codename/component
 	find "$APTDIR/pool/$component" \
@@ -128,7 +110,7 @@ apt-ftparchive generate "$APTDIR/conf/apt-ftparchive.conf"
 
 for dir in contrib/builder/deb/*/; do
 	version="$(basename "$dir")"
-	codename="${version//debootstrap-}"	
+	codename="${version//debootstrap-}"
 
 	apt-ftparchive \
 		-o "APT::FTPArchive::Release::Codename=$codename" \

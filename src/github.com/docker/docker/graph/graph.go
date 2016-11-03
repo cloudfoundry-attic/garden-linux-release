@@ -2,7 +2,6 @@ package graph
 
 import (
 	"compress/gzip"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,33 +21,33 @@ import (
 	"github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/progressreader"
 	"github.com/docker/docker/pkg/streamformatter"
 	"github.com/docker/docker/pkg/stringid"
-	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/pkg/truncindex"
 	"github.com/docker/docker/runconfig"
 	"github.com/vbatts/tar-split/tar/asm"
 	"github.com/vbatts/tar-split/tar/storage"
 )
 
-// v1ImageDescriptor is a non-content-addressable image descriptor
-type v1ImageDescriptor struct {
+// v1Descriptor is a non-content-addressable image descriptor
+type v1Descriptor struct {
 	img *image.Image
 }
 
 // ID returns the image ID specified in the image structure.
-func (img v1ImageDescriptor) ID() string {
+func (img v1Descriptor) ID() string {
 	return img.img.ID
 }
 
 // Parent returns the parent ID specified in the image structure.
-func (img v1ImageDescriptor) Parent() string {
+func (img v1Descriptor) Parent() string {
 	return img.img.Parent
 }
 
 // MarshalConfig renders the image structure into JSON.
-func (img v1ImageDescriptor) MarshalConfig() ([]byte, error) {
+func (img v1Descriptor) MarshalConfig() ([]byte, error) {
 	return json.Marshal(img.img)
 }
 
@@ -97,11 +96,19 @@ func (r *retainedLayers) Exists(layerID string) bool {
 
 // A Graph is a store for versioned filesystem images and the relationship between them.
 type Graph struct {
-	root       string
-	idIndex    *truncindex.TruncIndex
-	driver     graphdriver.Driver
-	imageMutex imageMutex // protect images in driver.
-	retained   *retainedLayers
+	root             string
+	idIndex          *truncindex.TruncIndex
+	driver           graphdriver.Driver
+	imagesMutex      sync.Mutex
+	imageMutex       imageMutex // protect images in driver.
+	retained         *retainedLayers
+	tarSplitDisabled bool
+	uidMaps          []idtools.IDMap
+	gidMaps          []idtools.IDMap
+
+	// access to parentRefs must be protected with imageMutex locking the image id
+	// on the key of the map (e.g. imageMutex.Lock(img.ID), parentRefs[img.ID]...)
+	parentRefs map[string]int
 }
 
 // file names for ./graph/<ID>/
@@ -123,22 +130,36 @@ var (
 
 // NewGraph instantiates a new graph at the given root path in the filesystem.
 // `root` will be created if it doesn't exist.
-func NewGraph(root string, driver graphdriver.Driver) (*Graph, error) {
+func NewGraph(root string, driver graphdriver.Driver, uidMaps, gidMaps []idtools.IDMap) (*Graph, error) {
 	abspath, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
 	}
+
+	rootUID, rootGID, err := idtools.GetRootUIDGID(uidMaps, gidMaps)
+	if err != nil {
+		return nil, err
+	}
 	// Create the root directory if it doesn't exists
-	if err := system.MkdirAll(root, 0700); err != nil && !os.IsExist(err) {
+	if err := idtools.MkdirAllAs(root, 0700, rootUID, rootGID); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 
 	graph := &Graph{
-		root:     abspath,
-		idIndex:  truncindex.NewTruncIndex([]string{}),
-		driver:   driver,
-		retained: &retainedLayers{layerHolders: make(map[string]map[string]struct{})},
+		root:       abspath,
+		idIndex:    truncindex.NewTruncIndex([]string{}),
+		driver:     driver,
+		retained:   &retainedLayers{layerHolders: make(map[string]map[string]struct{})},
+		uidMaps:    uidMaps,
+		gidMaps:    gidMaps,
+		parentRefs: make(map[string]int),
 	}
+
+	// Windows does not currently support tarsplit functionality.
+	if runtime.GOOS == "windows" {
+		graph.tarSplitDisabled = true
+	}
+
 	if err := graph.restore(); err != nil {
 		return nil, err
 	}
@@ -159,24 +180,28 @@ func (graph *Graph) restore() error {
 	for _, v := range dir {
 		id := v.Name()
 		if graph.driver.Exists(id) {
+			img, err := graph.loadImage(id)
+			if err != nil {
+				logrus.Warnf("ignoring image %s, it could not be restored: %v", id, err)
+				continue
+			}
+			graph.imageMutex.Lock(img.Parent)
+			graph.parentRefs[img.Parent]++
+			graph.imageMutex.Unlock(img.Parent)
 			ids = append(ids, id)
 		}
 	}
-
-	baseIds, err := graph.restoreBaseImages()
-	if err != nil {
-		return err
-	}
-	ids = append(ids, baseIds...)
 
 	graph.idIndex = truncindex.NewTruncIndex(ids)
 	logrus.Debugf("Restored %d elements", len(ids))
 	return nil
 }
 
-// FIXME: Implement error subclass instead of looking at the error text
-// Note: This is the way golang implements os.IsNotExists on Plan9
+// IsNotExist detects whether an image exists by parsing the incoming error
+// message.
 func (graph *Graph) IsNotExist(err error, id string) bool {
+	// FIXME: Implement error subclass instead of looking at the error text
+	// Note: This is the way golang implements os.IsNotExists on Plan9
 	return err != nil && (strings.Contains(strings.ToLower(err.Error()), "does not exist") || strings.Contains(strings.ToLower(err.Error()), "no such")) && strings.Contains(err.Error(), id)
 }
 
@@ -210,7 +235,7 @@ func (graph *Graph) Get(name string) (*image.Image, error) {
 		}
 
 		img.Size = size
-		if err := graph.saveSize(graph.imageRoot(id), int(img.Size)); err != nil {
+		if err := graph.saveSize(graph.imageRoot(id), img.Size); err != nil {
 			return nil, err
 		}
 	}
@@ -218,7 +243,7 @@ func (graph *Graph) Get(name string) (*image.Image, error) {
 }
 
 // Create creates a new image and registers it in the graph.
-func (graph *Graph) Create(layerData archive.ArchiveReader, containerID, containerImage, comment, author string, containerConfig, config *runconfig.Config) (*image.Image, error) {
+func (graph *Graph) Create(layerData io.Reader, containerID, containerImage, comment, author string, containerConfig, config *runconfig.Config) (*image.Image, error) {
 	img := &image.Image{
 		ID:            stringid.GenerateRandomID(),
 		Comment:       comment,
@@ -236,7 +261,7 @@ func (graph *Graph) Create(layerData archive.ArchiveReader, containerID, contain
 		img.ContainerConfig = *containerConfig
 	}
 
-	if err := graph.Register(v1ImageDescriptor{img}, layerData); err != nil {
+	if err := graph.Register(v1Descriptor{img}, layerData); err != nil {
 		return nil, err
 	}
 	return img, nil
@@ -244,12 +269,16 @@ func (graph *Graph) Create(layerData archive.ArchiveReader, containerID, contain
 
 // Register imports a pre-existing image into the graph.
 // Returns nil if the image is already registered.
-func (graph *Graph) Register(im image.ImageDescriptor, layerData archive.ArchiveReader) (err error) {
+func (graph *Graph) Register(im image.Descriptor, layerData io.Reader) (err error) {
 	imgID := im.ID()
 
 	if err := image.ValidateID(imgID); err != nil {
 		return err
 	}
+
+	// this is needed cause pull_v2 attemptIDReuse could deadlock
+	graph.imagesMutex.Lock()
+	defer graph.imagesMutex.Unlock()
 
 	// We need this entire operation to be atomic within the engine. Note that
 	// this doesn't mean Register is fully safe yet.
@@ -259,7 +288,7 @@ func (graph *Graph) Register(im image.ImageDescriptor, layerData archive.Archive
 	return graph.register(im, layerData)
 }
 
-func (graph *Graph) register(im image.ImageDescriptor, layerData archive.ArchiveReader) (err error) {
+func (graph *Graph) register(im image.Descriptor, layerData io.Reader) (err error) {
 	imgID := im.ID()
 
 	// Skip register if image is already registered
@@ -290,11 +319,11 @@ func (graph *Graph) register(im image.ImageDescriptor, layerData archive.Archive
 	// (FIXME: make that mandatory for drivers).
 	graph.driver.Remove(imgID)
 
-	tmp, err := graph.mktemp("")
-	defer os.RemoveAll(tmp)
+	tmp, err := graph.mktemp()
 	if err != nil {
-		return fmt.Errorf("mktemp failed: %s", err)
+		return err
 	}
+	defer os.RemoveAll(tmp)
 
 	parent := im.Parent()
 
@@ -315,11 +344,17 @@ func (graph *Graph) register(im image.ImageDescriptor, layerData archive.Archive
 	if err := os.Rename(tmp, graph.imageRoot(imgID)); err != nil {
 		return err
 	}
+
 	graph.idIndex.Add(imgID)
+
+	graph.imageMutex.Lock(parent)
+	graph.parentRefs[parent]++
+	graph.imageMutex.Unlock(parent)
+
 	return nil
 }
 
-func createRootFilesystemInDriver(graph *Graph, id, parent string, layerData archive.ArchiveReader) error {
+func createRootFilesystemInDriver(graph *Graph, id, parent string, layerData io.Reader) error {
 	if err := graph.driver.Create(id, parent); err != nil {
 		return fmt.Errorf("Driver %s failed to create image rootfs %s: %s", graph.driver, id, err)
 	}
@@ -334,10 +369,11 @@ func (graph *Graph) TempLayerArchive(id string, sf *streamformatter.StreamFormat
 	if err != nil {
 		return nil, err
 	}
-	tmp, err := graph.mktemp("")
+	tmp, err := graph.mktemp()
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(tmp)
 	a, err := graph.TarLayer(image)
 	if err != nil {
 		return nil, err
@@ -356,40 +392,16 @@ func (graph *Graph) TempLayerArchive(id string, sf *streamformatter.StreamFormat
 }
 
 // mktemp creates a temporary sub-directory inside the graph's filesystem.
-func (graph *Graph) mktemp(id string) (string, error) {
-	dir := filepath.Join(graph.root, "_tmp", stringid.GenerateRandomID())
-	if err := system.MkdirAll(dir, 0700); err != nil {
+func (graph *Graph) mktemp() (string, error) {
+	dir := filepath.Join(graph.root, "_tmp", stringid.GenerateNonCryptoID())
+	rootUID, rootGID, err := idtools.GetRootUIDGID(graph.uidMaps, graph.gidMaps)
+	if err != nil {
+		return "", err
+	}
+	if err := idtools.MkdirAllAs(dir, 0700, rootUID, rootGID); err != nil {
 		return "", err
 	}
 	return dir, nil
-}
-
-func (graph *Graph) newTempFile() (*os.File, error) {
-	tmp, err := graph.mktemp("")
-	if err != nil {
-		return nil, err
-	}
-	return ioutil.TempFile(tmp, "")
-}
-
-func bufferToFile(f *os.File, src io.Reader) (int64, digest.Digest, error) {
-	var (
-		h = sha256.New()
-		w = gzip.NewWriter(io.MultiWriter(f, h))
-	)
-	_, err := io.Copy(w, src)
-	w.Close()
-	if err != nil {
-		return 0, "", err
-	}
-	n, err := f.Seek(0, os.SEEK_CUR)
-	if err != nil {
-		return 0, "", err
-	}
-	if _, err := f.Seek(0, 0); err != nil {
-		return 0, "", err
-	}
-	return n, digest.NewDigest("sha256", h), nil
 }
 
 // Delete atomically removes an image from the graph.
@@ -398,20 +410,31 @@ func (graph *Graph) Delete(name string) error {
 	if err != nil {
 		return err
 	}
-	tmp, err := graph.mktemp("")
+	img, err := graph.Get(id)
+	if err != nil {
+		return err
+	}
 	graph.idIndex.Delete(id)
-	if err == nil {
+	tmp, err := graph.mktemp()
+	if err != nil {
+		tmp = graph.imageRoot(id)
+	} else {
 		if err := os.Rename(graph.imageRoot(id), tmp); err != nil {
 			// On err make tmp point to old dir and cleanup unused tmp dir
 			os.RemoveAll(tmp)
 			tmp = graph.imageRoot(id)
 		}
-	} else {
-		// On err make tmp point to old dir for cleanup
-		tmp = graph.imageRoot(id)
 	}
 	// Remove rootfs data from the driver
 	graph.driver.Remove(id)
+
+	graph.imageMutex.Lock(img.Parent)
+	graph.parentRefs[img.Parent]--
+	if graph.parentRefs[img.Parent] == 0 {
+		delete(graph.parentRefs, img.Parent)
+	}
+	graph.imageMutex.Unlock(img.Parent)
+
 	// Remove the trashed image directory
 	return os.RemoveAll(tmp)
 }
@@ -429,16 +452,18 @@ func (graph *Graph) Map() map[string]*image.Image {
 // The walking order is undetermined.
 func (graph *Graph) walkAll(handler func(*image.Image)) {
 	graph.idIndex.Iterate(func(id string) {
-		if img, err := graph.Get(id); err != nil {
+		img, err := graph.Get(id)
+		if err != nil {
 			return
-		} else if handler != nil {
+		}
+		if handler != nil {
 			handler(img)
 		}
 	})
 }
 
 // ByParent returns a lookup table of images by their parent.
-// If an image of id ID has 3 children images, then the value for key ID
+// If an image of key ID has 3 children images, then the value for key ID
 // will be a list of 3 images.
 // If an image has no children, it will not have an entry in the table.
 func (graph *Graph) ByParent() map[string][]*image.Image {
@@ -457,13 +482,21 @@ func (graph *Graph) ByParent() map[string][]*image.Image {
 	return byParent
 }
 
-// If the images and layers are in pulling chain, retain them.
-// If not, they may be deleted by rmi with dangling condition.
+// HasChildren returns whether the given image has any child images.
+func (graph *Graph) HasChildren(imgID string) bool {
+	graph.imageMutex.Lock(imgID)
+	count := graph.parentRefs[imgID]
+	graph.imageMutex.Unlock(imgID)
+	return count > 0
+}
+
+// Retain keeps the images and layers that are in the pulling chain so that
+// they are not deleted. If not retained, they may be deleted by rmi.
 func (graph *Graph) Retain(sessionID string, layerIDs ...string) {
 	graph.retained.Add(sessionID, layerIDs)
 }
 
-// Release removes the referenced image id from the provided set of layers.
+// Release removes the referenced image ID from the provided set of layers.
 func (graph *Graph) Release(sessionID string, layerIDs ...string) {
 	graph.retained.Delete(sessionID, layerIDs)
 }
@@ -472,15 +505,23 @@ func (graph *Graph) Release(sessionID string, layerIDs ...string) {
 // A head is an image which is not the parent of another image in the graph.
 func (graph *Graph) Heads() map[string]*image.Image {
 	heads := make(map[string]*image.Image)
-	byParent := graph.ByParent()
 	graph.walkAll(func(image *image.Image) {
-		// If it's not in the byParent lookup table, then
-		// it's not a parent -> so it's a head!
-		if _, exists := byParent[image.ID]; !exists {
+		// if it has no children, then it's not a parent, so it's an head
+		if !graph.HasChildren(image.ID) {
 			heads[image.ID] = image
 		}
 	})
 	return heads
+}
+
+// TarLayer returns a tar archive of the image's filesystem layer.
+func (graph *Graph) TarLayer(img *image.Image) (arch io.ReadCloser, err error) {
+	rdr, err := graph.assembleTarLayer(img)
+	if err != nil {
+		logrus.Debugf("[graph] TarLayer with traditional differ: %s", img.ID)
+		return graph.driver.Diff(img.ID, img.Parent)
+	}
+	return rdr, nil
 }
 
 func (graph *Graph) imageRoot(id string) string {
@@ -546,14 +587,14 @@ func (graph *Graph) loadImage(id string) (*image.Image, error) {
 }
 
 // saveSize stores the `size` in the provided graph `img` directory `root`.
-func (graph *Graph) saveSize(root string, size int) error {
-	if err := ioutil.WriteFile(filepath.Join(root, layersizeFileName), []byte(strconv.Itoa(size)), 0600); err != nil {
+func (graph *Graph) saveSize(root string, size int64) error {
+	if err := ioutil.WriteFile(filepath.Join(root, layersizeFileName), []byte(strconv.FormatInt(size, 10)), 0600); err != nil {
 		return fmt.Errorf("Error storing image size in %s/%s: %s", root, layersizeFileName, err)
 	}
 	return nil
 }
 
-// SetDigest sets the digest for the image layer to the provided value.
+// SetLayerDigest sets the digest for the image layer to the provided value.
 func (graph *Graph) SetLayerDigest(id string, dgst digest.Digest) error {
 	graph.imageMutex.Lock(id)
 	defer graph.imageMutex.Unlock(id)
@@ -568,7 +609,7 @@ func (graph *Graph) setLayerDigest(id string, dgst digest.Digest) error {
 	return nil
 }
 
-// GetDigest gets the digest for the provide image layer id.
+// GetLayerDigest gets the digest for the provide image layer id.
 func (graph *Graph) GetLayerDigest(id string) (digest.Digest, error) {
 	graph.imageMutex.Lock(id)
 	defer graph.imageMutex.Unlock(id)
@@ -674,37 +715,80 @@ func jsonPath(root string) string {
 	return filepath.Join(root, jsonFileName)
 }
 
-func (graph *Graph) disassembleAndApplyTarLayer(id, parent string, layerData archive.ArchiveReader, root string) (size int64, err error) {
-	// this is saving the tar-split metadata
-	mf, err := os.OpenFile(filepath.Join(root, tarDataFileName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0600))
-	if err != nil {
-		return 0, err
-	}
-	mfz := gzip.NewWriter(mf)
-	metaPacker := storage.NewJSONPacker(mfz)
-	defer mf.Close()
-	defer mfz.Close()
-
-	inflatedLayerData, err := archive.DecompressStream(layerData)
-	if err != nil {
-		return 0, err
+// storeImage stores file system layer data for the given image to the
+// graph's storage driver. Image metadata is stored in a file
+// at the specified root directory.
+func (graph *Graph) storeImage(id, parent string, config []byte, layerData io.Reader, root string) (err error) {
+	var size int64
+	// Store the layer. If layerData is not nil, unpack it into the new layer
+	if layerData != nil {
+		if size, err = graph.disassembleAndApplyTarLayer(id, parent, layerData, root); err != nil {
+			return err
+		}
 	}
 
-	// we're passing nil here for the file putter, because the ApplyDiff will
-	// handle the extraction of the archive
-	rdr, err := asm.NewInputTarStream(inflatedLayerData, metaPacker, nil)
-	if err != nil {
-		return 0, err
+	if err := graph.saveSize(root, size); err != nil {
+		return err
 	}
 
-	if size, err = graph.driver.ApplyDiff(id, parent, archive.ArchiveReader(rdr)); err != nil {
+	if err := ioutil.WriteFile(jsonPath(root), config, 0600); err != nil {
+		return err
+	}
+
+	// If image is pointing to a parent via CompatibilityID write the reference to disk
+	img, err := image.NewImgJSON(config)
+	if err != nil {
+		return err
+	}
+
+	if img.ParentID.Validate() == nil && parent != img.ParentID.Hex() {
+		if err := ioutil.WriteFile(filepath.Join(root, parentFileName), []byte(parent), 0600); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (graph *Graph) disassembleAndApplyTarLayer(id, parent string, layerData io.Reader, root string) (size int64, err error) {
+	var ar io.Reader
+
+	if graph.tarSplitDisabled {
+		ar = layerData
+	} else {
+		// this is saving the tar-split metadata
+		mf, err := os.OpenFile(filepath.Join(root, tarDataFileName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0600))
+		if err != nil {
+			return 0, err
+		}
+
+		mfz := gzip.NewWriter(mf)
+		metaPacker := storage.NewJSONPacker(mfz)
+		defer mf.Close()
+		defer mfz.Close()
+
+		inflatedLayerData, err := archive.DecompressStream(layerData)
+		if err != nil {
+			return 0, err
+		}
+
+		// we're passing nil here for the file putter, because the ApplyDiff will
+		// handle the extraction of the archive
+		rdr, err := asm.NewInputTarStream(inflatedLayerData, metaPacker, nil)
+		if err != nil {
+			return 0, err
+		}
+
+		ar = archive.Reader(rdr)
+	}
+
+	if size, err = graph.driver.ApplyDiff(id, parent, ar); err != nil {
 		return 0, err
 	}
 
 	return
 }
 
-func (graph *Graph) assembleTarLayer(img *image.Image) (archive.Archive, error) {
+func (graph *Graph) assembleTarLayer(img *image.Image) (io.ReadCloser, error) {
 	root := graph.imageRoot(img.ID)
 	mFileName := filepath.Join(root, tarDataFileName)
 	mf, err := os.Open(mFileName)

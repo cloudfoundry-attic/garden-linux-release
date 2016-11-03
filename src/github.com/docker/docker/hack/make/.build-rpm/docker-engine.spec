@@ -17,7 +17,7 @@ Packager: Docker <support@docker.com>
 %global debug_package %{nil}
 
 # is_systemd conditional
-%if 0%{?fedora} >= 21 || 0%{?centos} >= 7 || 0%{?rhel} >= 7
+%if 0%{?fedora} >= 21 || 0%{?centos} >= 7 || 0%{?rhel} >= 7 || 0%{?suse_version} >= 1300
 %global is_systemd 1
 %endif
 
@@ -27,6 +27,9 @@ Packager: Docker <support@docker.com>
 %if 0%{?is_systemd}
 BuildRequires: pkgconfig(systemd)
 Requires: systemd-units
+%if !0%{?suse_version}
+BuildRequires: pkgconfig(libsystemd-journal)
+%endif
 %else
 Requires(post): chkconfig
 Requires(preun): chkconfig
@@ -50,13 +53,41 @@ Requires: kernel-uek >= 3.8
 Requires: device-mapper >= 1.02.90-2
 %endif
 
+# docker-selinux conditional
+%if 0%{?fedora} >= 20 || 0%{?centos} >= 7 || 0%{?rhel} >= 7 || 0%{?oraclelinux} >= 7
+%global with_selinux 1
+%endif
+
+# start if with_selinux
+%if 0%{?with_selinux}
+# Version of SELinux we were using
+%if 0%{?fedora} == 20
+%global selinux_policyver 3.12.1-197
+%endif # fedora 20
+%if 0%{?fedora} == 21
+%global selinux_policyver 3.13.1-105
+%endif # fedora 21
+%if 0%{?fedora} >= 22
+%global selinux_policyver 3.13.1-128
+%endif # fedora 22
+%if 0%{?centos} >= 7 || 0%{?rhel} >= 7 || 0%{?oraclelinux} >= 7
+%global selinux_policyver 3.13.1-23
+%endif # centos,oraclelinux 7
+%endif # with_selinux
+
+# RE: rhbz#1195804 - ensure min NVR for selinux-policy
+%if 0%{?with_selinux}
+Requires: selinux-policy >= %{selinux_policyver}
+Requires(pre): %{name}-selinux >= %{epoch}:%{version}-%{release}
+%endif # with_selinux
+
 # conflicting packages
 Conflicts: docker
 Conflicts: docker-io
 
 %description
-Docker is an open source project to pack, ship and run any application as a
-lightweight container
+Docker is an open source project to build, ship and run any application as a
+lightweight container.
 
 Docker containers are both hardware-agnostic and platform-agnostic. This means
 they can run anywhere, from your laptop to the largest EC2 compute instance and
@@ -73,6 +104,7 @@ depending on a particular stack or provider.
 %endif
 
 %build
+export DOCKER_GITCOMMIT=%{_gitcommit}
 ./hack/make.sh dynbinary
 # ./man/md2man-all.sh runs outside the build container (if at all), since we don't have go-md2man here
 
@@ -101,11 +133,10 @@ install -d $RPM_BUILD_ROOT/%{_initddir}
 install -d $RPM_BUILD_ROOT/%{_unitdir}
 install -p -m 644 contrib/init/systemd/docker.service $RPM_BUILD_ROOT/%{_unitdir}/docker.service
 install -p -m 644 contrib/init/systemd/docker.socket $RPM_BUILD_ROOT/%{_unitdir}/docker.socket
-%endif
-
+%else
 install -p -m 644 contrib/init/sysvinit-redhat/docker.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/docker
 install -p -m 755 contrib/init/sysvinit-redhat/docker $RPM_BUILD_ROOT/%{_initddir}/docker
-
+%endif
 # add bash completions
 install -d $RPM_BUILD_ROOT/usr/share/bash-completion/completions
 install -d $RPM_BUILD_ROOT/usr/share/zsh/vendor-completions
@@ -134,15 +165,17 @@ install -p -m 644 contrib/syntax/nano/Dockerfile.nanorc $RPM_BUILD_ROOT/usr/shar
 
 # list files owned by the package here
 %files
+%doc AUTHORS CHANGELOG.md CONTRIBUTING.md LICENSE MAINTAINERS NOTICE README.md
 /%{_bindir}/docker
 /%{_libexecdir}/docker/dockerinit
 /%{_sysconfdir}/udev/rules.d/80-docker.rules
 %if 0%{?is_systemd}
 /%{_unitdir}/docker.service
 /%{_unitdir}/docker.socket
-%endif
-/etc/sysconfig/docker
+%else
+%config(noreplace,missingok) /etc/sysconfig/docker
 /%{_initddir}/docker
+%endif
 /usr/share/bash-completion/completions/docker
 /usr/share/zsh/vendor-completions/_docker
 /usr/share/fish/completions/docker.fish

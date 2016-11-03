@@ -40,13 +40,16 @@ RUN apt-get update && apt-get install -y \
 	createrepo \
 	curl \
 	dpkg-sig \
+	gcc-mingw-w64 \
 	git \
 	iptables \
 	libapparmor-dev \
 	libcap-dev \
 	libsqlite3-dev \
+	libsystemd-journal-dev \
 	mercurial \
 	parallel \
+	pkg-config \
 	python-mock \
 	python-pip \
 	python-websocket \
@@ -55,6 +58,7 @@ RUN apt-get update && apt-get install -y \
 	ruby1.9.1-dev \
 	s3cmd=1.1.0* \
 	ubuntu-zfs \
+	xfsprogs \
 	libzfs-dev \
 	--no-install-recommends
 
@@ -80,7 +84,7 @@ RUN cd /usr/src/lxc \
 	&& ldconfig
 
 # Install Go
-ENV GO_VERSION 1.4.2
+ENV GO_VERSION 1.4.3
 RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.src.tar.gz | tar -v -C /usr/local -xz \
 	&& mkdir -p /go/bin
 ENV PATH /go/bin:/usr/local/go/bin:$PATH
@@ -147,10 +151,11 @@ RUN set -x \
 	&& rm -rf "$GOPATH"
 
 # Get the "docker-py" source so we can run their integration tests
-ENV DOCKER_PY_COMMIT 8a87001d09852058f08a807ab6e8491d57ca1e88
+ENV DOCKER_PY_COMMIT 47ab89ec2bd3bddf1221b856ffbaff333edeabb4
 RUN git clone https://github.com/docker/docker-py.git /docker-py \
 	&& cd /docker-py \
-	&& git checkout -q $DOCKER_PY_COMMIT
+	&& git checkout -q $DOCKER_PY_COMMIT \
+	&& pip install -r test-requirements.txt
 
 # Setup s3cmd config
 RUN { \

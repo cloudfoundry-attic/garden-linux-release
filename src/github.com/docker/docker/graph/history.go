@@ -27,8 +27,7 @@ func (graph *Graph) WalkHistory(img *image.Image, handler func(image.Image) erro
 	return nil
 }
 
-// depth returns the number of parents for a
-// current image
+// depth returns the number of parents for the current image
 func (graph *Graph) depth(img *image.Image) (int, error) {
 	var (
 		count  = 0
@@ -38,8 +37,7 @@ func (graph *Graph) depth(img *image.Image) (int, error) {
 
 	for parent != nil {
 		count++
-		parent, err = graph.GetParent(parent)
-		if err != nil {
+		if parent, err = graph.GetParent(parent); err != nil {
 			return -1, err
 		}
 	}
@@ -67,6 +65,8 @@ func (graph *Graph) CheckDepth(img *image.Image) error {
 	return nil
 }
 
+// History returns a slice of ImageHistory structures for the specified image
+// name by walking the image lineage.
 func (s *TagStore) History(name string) ([]*types.ImageHistory, error) {
 	foundImage, err := s.LookupImage(name)
 	if err != nil {
@@ -101,6 +101,7 @@ func (s *TagStore) History(name string) ([]*types.ImageHistory, error) {
 	return history, err
 }
 
+// GetParent returns the parent image for the specified image.
 func (graph *Graph) GetParent(img *image.Image) (*image.Image, error) {
 	if img.Parent == "" {
 		return nil, nil
@@ -108,11 +109,12 @@ func (graph *Graph) GetParent(img *image.Image) (*image.Image, error) {
 	return graph.Get(img.Parent)
 }
 
-func (graph *Graph) GetParentsSize(img *image.Image, size int64) int64 {
+// GetParentsSize returns the combined size of all parent images. If there is
+// no parent image or it's unavailable, it returns 0.
+func (graph *Graph) GetParentsSize(img *image.Image) int64 {
 	parentImage, err := graph.GetParent(img)
 	if err != nil || parentImage == nil {
-		return size
+		return 0
 	}
-	size += parentImage.Size
-	return graph.GetParentsSize(parentImage, size)
+	return parentImage.Size + graph.GetParentsSize(parentImage)
 }

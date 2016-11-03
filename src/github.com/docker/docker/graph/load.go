@@ -15,7 +15,7 @@ import (
 	"github.com/docker/docker/pkg/chrootarchive"
 )
 
-// Loads a set of images into the repository. This is the complementary of ImageExport.
+// Load uploads a set of images into the repository. This is the complementary of ImageExport.
 // The input stream is an uncompressed tar ball containing images and metadata.
 func (s *TagStore) Load(inTar io.ReadCloser, outStream io.Writer) error {
 	tmpImageDir, err := ioutil.TempDir("", "docker-import-")
@@ -71,7 +71,7 @@ func (s *TagStore) Load(inTar io.ReadCloser, outStream io.Writer) error {
 
 	for imageName, tagMap := range repositories {
 		for tag, address := range tagMap {
-			if err := s.SetLoad(imageName, tag, address, true, outStream); err != nil {
+			if err := s.setLoad(imageName, tag, address, true, outStream); err != nil {
 				return err
 			}
 		}
@@ -84,7 +84,7 @@ func (s *TagStore) recursiveLoad(address, tmpImageDir string) error {
 	if _, err := s.LookupImage(address); err != nil {
 		logrus.Debugf("Loading %s", address)
 
-		imageJson, err := ioutil.ReadFile(filepath.Join(tmpImageDir, "repo", address, "json"))
+		imageJSON, err := ioutil.ReadFile(filepath.Join(tmpImageDir, "repo", address, "json"))
 		if err != nil {
 			logrus.Debugf("Error reading json: %v", err)
 			return err
@@ -95,7 +95,7 @@ func (s *TagStore) recursiveLoad(address, tmpImageDir string) error {
 			logrus.Debugf("Error reading embedded tar: %v", err)
 			return err
 		}
-		img, err := image.NewImgJSON(imageJson)
+		img, err := image.NewImgJSON(imageJSON)
 		if err != nil {
 			logrus.Debugf("Error unmarshalling json: %v", err)
 			return err
@@ -106,17 +106,14 @@ func (s *TagStore) recursiveLoad(address, tmpImageDir string) error {
 		}
 
 		// ensure no two downloads of the same layer happen at the same time
-		if c, err := s.poolAdd("pull", "layer:"+img.ID); err != nil {
-			if c != nil {
-				logrus.Debugf("Image (id: %s) load is already running, waiting: %v", img.ID, err)
-				<-c
-				return nil
-			}
-
-			return err
+		poolKey := "layer:" + img.ID
+		broadcaster, found := s.poolAdd("pull", poolKey)
+		if found {
+			logrus.Debugf("Image (id: %s) load is already running, waiting", img.ID)
+			return broadcaster.Wait()
 		}
 
-		defer s.poolRemove("pull", "layer:"+img.ID)
+		defer s.poolRemove("pull", poolKey)
 
 		if img.Parent != "" {
 			if !s.graph.Exists(img.Parent) {
@@ -125,7 +122,7 @@ func (s *TagStore) recursiveLoad(address, tmpImageDir string) error {
 				}
 			}
 		}
-		if err := s.graph.Register(v1ImageDescriptor{img}, layer); err != nil {
+		if err := s.graph.Register(v1Descriptor{img}, layer); err != nil {
 			return err
 		}
 	}

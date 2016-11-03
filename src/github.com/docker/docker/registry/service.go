@@ -24,7 +24,7 @@ func NewService(options *Options) *Service {
 }
 
 // Auth contacts the public registry with the provided credentials,
-// and returns OK if authentication was sucessful.
+// and returns OK if authentication was successful.
 // It can be used to verify the validity of a client's credentials.
 func (s *Service) Auth(authConfig *cliconfig.AuthConfig) (string, error) {
 	addr := authConfig.ServerAddress
@@ -54,7 +54,8 @@ func (s *Service) Auth(authConfig *cliconfig.AuthConfig) (string, error) {
 // Search queries the public registry for images matching the specified
 // search terms, and returns the results.
 func (s *Service) Search(term string, authConfig *cliconfig.AuthConfig, headers map[string][]string) (*SearchResults, error) {
-	repoInfo, err := s.ResolveRepository(term)
+
+	repoInfo, err := s.ResolveRepositoryBySearch(term)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,13 @@ func (s *Service) Search(term string, authConfig *cliconfig.AuthConfig, headers 
 // ResolveRepository splits a repository name into its components
 // and configuration of the associated registry.
 func (s *Service) ResolveRepository(name string) (*RepositoryInfo, error) {
-	return s.Config.NewRepositoryInfo(name)
+	return s.Config.NewRepositoryInfo(name, false)
+}
+
+// ResolveRepositoryBySearch splits a repository name into its components
+// and configuration of the associated registry.
+func (s *Service) ResolveRepositoryBySearch(name string) (*RepositoryInfo, error) {
+	return s.Config.NewRepositoryInfo(name, true)
 }
 
 // ResolveIndex takes indexName and returns index info
@@ -124,12 +131,19 @@ func (s *Service) LookupPullEndpoints(repoName string) (endpoints []APIEndpoint,
 // It gives preference to v2 endpoints over v1, and HTTPS over plain HTTP.
 // Mirrors are not included.
 func (s *Service) LookupPushEndpoints(repoName string) (endpoints []APIEndpoint, err error) {
-	return s.lookupEndpoints(repoName)
+	allEndpoints, err := s.lookupEndpoints(repoName)
+	if err == nil {
+		for _, endpoint := range allEndpoints {
+			if !endpoint.Mirror {
+				endpoints = append(endpoints, endpoint)
+			}
+		}
+	}
+	return endpoints, err
 }
 
 func (s *Service) lookupEndpoints(repoName string) (endpoints []APIEndpoint, err error) {
 	endpoints, err = s.lookupV2Endpoints(repoName)
-
 	if err != nil {
 		return nil, err
 	}

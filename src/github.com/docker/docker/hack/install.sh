@@ -56,10 +56,13 @@ check_forked() {
 	# Check for lsb_release command existence, it usually exists in forked distros
 	if command_exists lsb_release; then
 		# Check if the `-u` option is supported
+		set +e
 		lsb_release -a -u > /dev/null 2>&1
+		lsb_release_exit_code=$?
+		set -e
 
 		# Check if the command has exited successfully, it means we're in a forked distro
-		if [ "$?" = "0" ]; then
+		if [ "$lsb_release_exit_code" = "0" ]; then
 			# Print info about current distro
 			cat <<-EOF
 			You're using '$lsb_dist' version '$dist_version'.
@@ -75,6 +78,16 @@ check_forked() {
 			EOF
 		fi
 	fi
+}
+
+rpm_import_repository_key() {
+	local key=$1; shift
+	local tmpdir=$(mktemp -d)
+	chmod 600 "$tmpdir"
+	gpg --homedir "$tmpdir" --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"
+	gpg --homedir "$tmpdir" --export --armor "$key" > "$tmpdir"/repo.key
+	rpm --import "$tmpdir"/repo.key
+	rm -rf "$tmpdir"
 }
 
 do_install() {
@@ -195,11 +208,11 @@ do_install() {
 		oracleserver)
 			# need to switch lsb_dist to match yum repo URL
 			lsb_dist="oraclelinux"
-			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//')"
+			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//' | sed 's/Server*//')"
 		;;
 
 		fedora|centos)
-			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//')"
+			dist_version="$(rpm -q --whatprovides redhat-release --queryformat "%{VERSION}\n" | sed 's/\/.*//' | sed 's/\..*//' | sed 's/Server*//')"
 		;;
 
 		*)
@@ -228,10 +241,60 @@ do_install() {
 			exit 0
 			;;
 
-		'opensuse project'|opensuse|'suse linux'|sle[sd])
+		'opensuse project'|opensuse)
+			echo 'Going to perform the following operations:'
+			if [ "$repo" != 'main' ]; then
+				echo '  * add repository obs://Virtualization:containers'
+			fi
+			echo '  * install Docker'
+			$sh_c 'echo "Press CTRL-C to abort"; sleep 3'
+
+			if [ "$repo" != 'main' ]; then
+				# install experimental packages from OBS://Virtualization:containers
+				(
+					set -x
+					zypper -n ar -f obs://Virtualization:containers Virtualization:containers
+					rpm_import_repository_key 55A0B34D49501BB7CA474F5AA193FBB572174FC2
+				)
+			fi
 			(
 				set -x
-				$sh_c 'sleep 3; zypper -n install docker'
+				zypper -n install docker
+			)
+			echo_docker_as_nonroot
+			exit 0
+			;;
+		'suse linux'|sle[sd])
+			echo 'Going to perform the following operations:'
+			if [ "$repo" != 'main' ]; then
+				echo '  * add repository obs://Virtualization:containers'
+				echo '  * install experimental Docker using packages NOT supported by SUSE'
+			else
+				echo '  * add the "Containers" module'
+				echo '  * install Docker using packages supported by SUSE'
+			fi
+			$sh_c 'echo "Press CTRL-C to abort"; sleep 3'
+
+			if [ "$repo" != 'main' ]; then
+				# install experimental packages from OBS://Virtualization:containers
+				echo >&2 'Warning: installing experimental packages from OBS, these packages are NOT supported by SUSE'
+				(
+					set -x
+					zypper -n ar -f obs://Virtualization:containers/SLE_12 Virtualization:containers
+					rpm_import_repository_key 55A0B34D49501BB7CA474F5AA193FBB572174FC2
+				)
+			else
+				# Add the containers module
+				# Note well-1: the SLE machine must already be registered against SUSE Customer Center
+				# Note well-2: the `-r ""` is required to workaround a known issue of SUSEConnect
+				(
+					set -x
+					SUSEConnect -p sle-module-containers/12/x86_64 -r ""
+				)
+			fi
+			(
+				set -x
+				zypper -n install docker
 			)
 			echo_docker_as_nonroot
 			exit 0

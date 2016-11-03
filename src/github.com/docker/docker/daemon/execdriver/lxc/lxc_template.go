@@ -15,6 +15,8 @@ import (
 	"github.com/opencontainers/runc/libcontainer/label"
 )
 
+// LxcTemplate is the template for lxc driver, it's used
+// to configure LXC.
 const LxcTemplate = `
 lxc.network.type = none
 # root filesystem
@@ -89,16 +91,21 @@ lxc.mount.entry = {{$value.Source}} {{escapeFstabSpaces $ROOTFS}}/{{escapeFstabS
 {{if .Resources}}
 {{if .Resources.Memory}}
 lxc.cgroup.memory.limit_in_bytes = {{.Resources.Memory}}
-lxc.cgroup.memory.soft_limit_in_bytes = {{.Resources.Memory}}
-{{with $memSwap := getMemorySwap .Resources}}
-lxc.cgroup.memory.memsw.limit_in_bytes = {{$memSwap}}
 {{end}}
+{{if gt .Resources.MemorySwap 0}}
+lxc.cgroup.memory.memsw.limit_in_bytes = {{.Resources.MemorySwap}}
 {{end}}
-{{if .Resources.CpuShares}}
-lxc.cgroup.cpu.shares = {{.Resources.CpuShares}}
+{{if gt .Resources.MemoryReservation 0}}
+lxc.cgroup.memory.soft_limit_in_bytes = {{.Resources.MemoryReservation}}
 {{end}}
-{{if .Resources.CpuPeriod}}
-lxc.cgroup.cpu.cfs_period_us = {{.Resources.CpuPeriod}}
+{{if gt .Resources.KernelMemory 0}}
+lxc.cgroup.memory.kmem.limit_in_bytes = {{.Resources.KernelMemory}}
+{{end}}
+{{if .Resources.CPUShares}}
+lxc.cgroup.cpu.shares = {{.Resources.CPUShares}}
+{{end}}
+{{if .Resources.CPUPeriod}}
+lxc.cgroup.cpu.cfs_period_us = {{.Resources.CPUPeriod}}
 {{end}}
 {{if .Resources.CpusetCpus}}
 lxc.cgroup.cpuset.cpus = {{.Resources.CpusetCpus}}
@@ -106,8 +113,8 @@ lxc.cgroup.cpuset.cpus = {{.Resources.CpusetCpus}}
 {{if .Resources.CpusetMems}}
 lxc.cgroup.cpuset.mems = {{.Resources.CpusetMems}}
 {{end}}
-{{if .Resources.CpuQuota}}
-lxc.cgroup.cpu.cfs_quota_us = {{.Resources.CpuQuota}}
+{{if .Resources.CPUQuota}}
+lxc.cgroup.cpu.cfs_quota_us = {{.Resources.CPUQuota}}
 {{end}}
 {{if .Resources.BlkioWeight}}
 lxc.cgroup.blkio.weight = {{.Resources.BlkioWeight}}
@@ -126,17 +133,6 @@ lxc.{{$value}}
 {{end}}
 {{end}}
 
-{{if .Network.Interface}}
-{{if .Network.Interface.IPAddress}}
-lxc.network.ipv4 = {{.Network.Interface.IPAddress}}/{{.Network.Interface.IPPrefixLen}}
-{{end}}
-{{if .Network.Interface.Gateway}}
-lxc.network.ipv4.gateway = {{.Network.Interface.Gateway}}
-{{end}}
-{{if .Network.Interface.MacAddress}}
-lxc.network.hwaddr = {{.Network.Interface.MacAddress}}
-{{end}}
-{{end}}
 {{if .ProcessConfig.Env}}
 lxc.utsname = {{getHostname .ProcessConfig.Env}}
 {{end}}
@@ -158,7 +154,7 @@ lxc.cap.drop = {{.}}
 {{end}}
 `
 
-var LxcTemplateCompiled *template.Template
+var lxcTemplateCompiled *template.Template
 
 // Escape spaces in strings according to the fstab documentation, which is the
 // format for "lxc.mount.entry" lines in lxc.conf. See also "man 5 fstab".
@@ -213,15 +209,6 @@ func isDirectory(source string) string {
 	return "file"
 }
 
-func getMemorySwap(v *execdriver.Resources) int64 {
-	// By default, MemorySwap is set to twice the size of RAM.
-	// If you want to omit MemorySwap, set it to `-1'.
-	if v.MemorySwap < 0 {
-		return 0
-	}
-	return v.Memory * 2
-}
-
 func getLabel(c map[string][]string, name string) string {
 	label := c["label"]
 	for _, l := range label {
@@ -246,7 +233,6 @@ func getHostname(env []string) string {
 func init() {
 	var err error
 	funcMap := template.FuncMap{
-		"getMemorySwap":     getMemorySwap,
 		"escapeFstabSpaces": escapeFstabSpaces,
 		"formatMountLabel":  label.FormatMountLabel,
 		"isDirectory":       isDirectory,
@@ -254,7 +240,7 @@ func init() {
 		"dropList":          dropList,
 		"getHostname":       getHostname,
 	}
-	LxcTemplateCompiled, err = template.New("lxc").Funcs(funcMap).Parse(LxcTemplate)
+	lxcTemplateCompiled, err = template.New("lxc").Funcs(funcMap).Parse(LxcTemplate)
 	if err != nil {
 		panic(err)
 	}

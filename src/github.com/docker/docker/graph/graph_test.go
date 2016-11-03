@@ -68,12 +68,12 @@ func TestInterruptedRegister(t *testing.T) {
 	defer nukeGraph(graph)
 	badArchive, w := io.Pipe() // Use a pipe reader as a fake archive which never yields data
 	image := &image.Image{
-		ID:      stringid.GenerateRandomID(),
+		ID:      stringid.GenerateNonCryptoID(),
 		Comment: "testing",
 		Created: time.Now(),
 	}
 	w.CloseWithError(errors.New("But I'm not a tarball!")) // (Nobody's perfect, darling)
-	graph.Register(v1ImageDescriptor{image}, badArchive)
+	graph.Register(v1Descriptor{image}, badArchive)
 	if _, err := graph.Get(image.ID); err == nil {
 		t.Fatal("Image should not exist after Register is interrupted")
 	}
@@ -82,7 +82,7 @@ func TestInterruptedRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := graph.Register(v1ImageDescriptor{image}, goodArchive); err != nil {
+	if err := graph.Register(v1Descriptor{image}, goodArchive); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -126,11 +126,11 @@ func TestRegister(t *testing.T) {
 		t.Fatal(err)
 	}
 	image := &image.Image{
-		ID:      stringid.GenerateRandomID(),
+		ID:      stringid.GenerateNonCryptoID(),
 		Comment: "testing",
 		Created: time.Now(),
 	}
-	err = graph.Register(v1ImageDescriptor{image}, archive)
+	err = graph.Register(v1Descriptor{image}, archive)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +212,7 @@ func TestDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Test delete twice (pull -> rm -> pull -> rm)
-	if err := graph.Register(v1ImageDescriptor{img1}, archive); err != nil {
+	if err := graph.Register(v1Descriptor{img1}, archive); err != nil {
 		t.Fatal(err)
 	}
 	if err := graph.Delete(img1.ID); err != nil {
@@ -229,33 +229,33 @@ func TestByParent(t *testing.T) {
 	graph, _ := tempGraph(t)
 	defer nukeGraph(graph)
 	parentImage := &image.Image{
-		ID:      stringid.GenerateRandomID(),
+		ID:      stringid.GenerateNonCryptoID(),
 		Comment: "parent",
 		Created: time.Now(),
 		Parent:  "",
 	}
 	childImage1 := &image.Image{
-		ID:      stringid.GenerateRandomID(),
+		ID:      stringid.GenerateNonCryptoID(),
 		Comment: "child1",
 		Created: time.Now(),
 		Parent:  parentImage.ID,
 	}
 	childImage2 := &image.Image{
-		ID:      stringid.GenerateRandomID(),
+		ID:      stringid.GenerateNonCryptoID(),
 		Comment: "child2",
 		Created: time.Now(),
 		Parent:  parentImage.ID,
 	}
 
-	err := graph.Register(v1ImageDescriptor{parentImage}, archive1)
+	err := graph.Register(v1Descriptor{parentImage}, archive1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = graph.Register(v1ImageDescriptor{childImage1}, archive2)
+	err = graph.Register(v1Descriptor{childImage1}, archive2)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = graph.Register(v1ImageDescriptor{childImage2}, archive3)
+	err = graph.Register(v1Descriptor{childImage2}, archive3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,11 +291,11 @@ func tempGraph(t *testing.T) (*Graph, graphdriver.Driver) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	driver, err := graphdriver.New(tmp, nil)
+	driver, err := graphdriver.New(tmp, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	graph, err := NewGraph(tmp, driver)
+	graph, err := NewGraph(tmp, driver, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
